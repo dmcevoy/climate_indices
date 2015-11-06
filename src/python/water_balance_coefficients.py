@@ -90,20 +90,8 @@ def divide_and_limit(numerators, denominators, zero_limits):
         else:
             message = 'Invalid zero limits argument, must contain 1 or 2 values'
             logger.error(message)
-            raise valueError(message)
+            raise ValueError(message)
 
     # reshape the results back to our original shape and return
     return np.reshape(results, original_shape)
-
-#----------------------------------------------------------------------------------        
-if __name__ == '__main__':
-
-    numers = np.array([[2., 3.], [8., 6]])
-    denoms = np.array([[1., 6.], [4., 12]])
-    results = divide_and_limit(numers, denoms, [1.0, 0.0])
-    numers[0,1] = 0
-    results = divide_and_limit(numers, denoms, [1.0, 0.0])
-    denoms[1,0] = 0
-    results = divide_and_limit(numers, denoms, [1.0, 0.0])
-    pass
     

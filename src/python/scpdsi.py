@@ -2,11 +2,9 @@ import logging
 import numpy as np
 import sys
 import netCDF4
-from numpy import ndarray
 import numba
 from duration_factors import compute_duration_factors
 from datetime import datetime
-import warnings
 import water_balance_coefficients as wb
 
 # set up a global logger
@@ -42,7 +40,7 @@ def gettingout(U, Ze, nmonths, nmonthc, dow):
     return Pe
 
 #--------------------------------------------------------------------------------------
-@numba.jit
+#@numba.jit
 def compute_pdsi(Z):
 
     '''
@@ -218,9 +216,9 @@ def compute_pdsi(Z):
             if (PDSI[i] >= 1) and (nmonths > 1):
                 X1[i] = 0
             if (PDSI[i] <=-1) and (nmonths>1):
-                X2[i][indices_1] = 0
+                X2[i] = 0
 
-    return [PDSI, X1, X2, X3, Pe, montho]
+    return PDSI
 
 #--------------------------------------------------------------------------------------
 @numba.jit
@@ -309,8 +307,8 @@ def write_dataset(output_file,
         units = template_dataset.variables['lon'].units
         if units is not None:
             lon_variable.units = units
-    except AttributeError as e:
-        logger.info('No units for longitude coordinate variable in the template data set NetCDF')
+    except AttributeError:
+        logger.info('No units found for longitude coordinate variable in the template data set NetCDF')
 
     # create the lat coordinate variable
     lat_variable = dataset.createVariable('lat', 'f4', ('lat',))
@@ -321,8 +319,8 @@ def write_dataset(output_file,
         units = template_dataset.variables['lat'].units
         if units is not None:
             lat_variable.units = units
-    except AttributeError as e:
-        logger.info('No units for latitude coordinate variable in the template data set NetCDF')
+    except AttributeError:
+        logger.info('No units found for latitude coordinate variable in the template data set NetCDF')
 
     # create the variable
     variable = dataset.createVariable('pdsi',
@@ -555,11 +553,11 @@ def extract_coords(datasets):
 
             # make sure that this file's lons and lats match up with the initial file
             if not np.allclose(lons, comparison_lons, atol=0.00001):
-                message = 'Longitude values not matching between base file ' + files[0] + ' and ' + file
+                message = 'Longitude values not matching between data sets'
                 logger.critical(message)
                 raise ValueError(message)
             if not np.allclose(lats, comparison_lats, atol=0.00001):
-                message = 'Latitude values not matching between base file ' + files[0] + ' and ' + file
+                message = 'Latitude values not matching between data sets'
                 logger.critical(message)
                 raise ValueError(message)
 
@@ -683,37 +681,20 @@ def get_cafec_precip(precip_dataset,
     for ary in arrays:
         ary = np.reshape(ary, full_years_shape)
         
-#     # reshape the full years arrays into the actual full years shape, reuse the *dat arrays in order to reuse memory
-#     etdat = np.reshape(full_years_et, full_years_shape)
-#     petdat = np.reshape(full_years_pet, full_years_shape)
-#     rdat = np.reshape(full_years_r, full_years_shape)
-#     prdat = np.reshape(full_years_pr, full_years_shape)
-#     rodat = np.reshape(full_years_ro, full_years_shape)
-#     prodat = np.reshape(full_years_pro, full_years_shape)
-#     tldat = np.reshape(full_years_tl, full_years_shape)
-#     pldat = np.reshape(full_years_pl, full_years_shape)
-#     spdat = np.reshape(full_years_sp, full_years_shape)
-
     # get the mean for each month, ignoring NaN values
-    etdat_mean = np.nanmean(etdat, axis=0)
-    petdat_mean = np.nanmean(petdat, axis=0)
-    rdat_mean = np.nanmean(rdat, axis=0)
-    prdat_mean = np.nanmean(prdat, axis=0)
-    rodat_mean = np.nanmean(rodat, axis=0)
-    prodat_mean = np.nanmean(prodat, axis=0)
-    tldat_mean = np.nanmean(tldat, axis=0)
-    pldat_mean = np.nanmean(pldat, axis=0)
+    et_mean = np.nanmean(etdat, axis=0)
+    pet_mean = np.nanmean(petdat, axis=0)
+    r_mean = np.nanmean(rdat, axis=0)
+    pr_mean = np.nanmean(prdat, axis=0)
+    ro_mean = np.nanmean(rodat, axis=0)
+    sp_mean = np.nanmean(spdat, axis=0)
+    tl_mean = np.nanmean(tldat, axis=0)
+    pl_mean = np.nanmean(pldat, axis=0)
 
     # TODO get the correct sums arrays in order to utilize the water balance 
     # coefficients function below (original Matlab contributed by WRCC/DRI, converted into Python)
-    alphas, betas, gammas, deltas = wb.get_coefficients_from_sums(PESUM, ETSUM, RSUM, PRSUM, SPSUM, ROSUM, PLSUM, TLSUM) #TODO test/debug/validate this function
+    alphas, betas, gammas, deltas = wb.get_coefficients_from_sums(pet_mean, et_mean, r_mean, pr_mean, sp_mean, ro_mean, pl_mean, tl_mean) #TODO test/debug/validate this function
     
-    # compute the water balance coefficients
-    alphas = np.nanmean(etdat, axis=0) / np.nanmean(petdat, axis=0)
-    betas = np.nanmean(rdat, axis=0) / np.nanmean(prdat, axis=0)
-    gammas = np.nanmean(rodat, axis=0) / np.nanmean(prodat, axis=0)
-    deltas = np.nanmean(tldat, axis=0) / np.nanmean(pldat, axis=0)
-
     # we now have alphas as the array of monthly coefficient of evapotranspiration values (eq. 7 of Palmer 1965),
     # betas as the array of monthly coefficient of recharge (eq. 7 of Palmer 1965), gammas as the array of
     # monthly coefficient of runoff (eq. 8 of Palmer 1965), and deltas as the array of monthly coefficient
@@ -724,56 +705,6 @@ def get_cafec_precip(precip_dataset,
 
     return PHAT, petdat, rdat, rodat, tldat
 
-#    else:
-#
-#        message = 'One or more of the water balance value means is NaN'
-#        logger.warn(message)
-#       raise ValueError(message)
-
-#--------------------------------------------------------------------------------------
-def get_full_years_shape(times, etdat, petdat, rdat, prdat, rodat, prodat, spdat, tldat, pldat):
-    
-    # determine the number of remaining months that we'll need to append onto the data set in order to get a full final year
-    remaining_months = 12 - (len(times) % 12)
-    if remaining_months < 12:
-
-        # fill an array to represent the remaining months of the final year of the data set with dummy/NaN values
-        nan_months = np.empty((remaining_months, len(lons), len(lats),))
-        nan_months[:] = np.NAN
-
-        # add on the remaining months into the data arrays so they'll have a number of months evenly divisible by 12
-        full_years_et = np.append(etdat, nan_months, axis=0)
-        full_years_pet = np.append(petdat, nan_months, axis=0)
-        full_years_r = np.append(rdat, nan_months, axis=0)
-        full_years_pr = np.append(prdat, nan_months, axis=0)
-        full_years_ro = np.append(rodat, nan_months, axis=0)
-        full_years_pro = np.append(prodat, nan_months, axis=0)
-        full_years_sp = np.append(spdat, nan_months, axis=0)
-        full_years_tl = np.append(tldat, nan_months, axis=0)
-        full_years_pl = np.append(pldat, nan_months, axis=0)
-
-        #TODO make sure that all the above arrays have the same shape
-
-    else:
-
-        # we assume remaining_months == 12 here, perhaps it's worth checking?
-        remaining_months = 0
-        full_years_et = etdat
-        full_years_pet = petdat
-        full_years_r = rdat
-        full_years_pr = prdat
-        full_years_ro = rodat
-        full_years_pro = prodat
-        full_years_sp = spdat
-        full_years_tl = tldat
-        full_years_pl = pldat
-
-    full_years = (len(times) + remaining_months) / 12
-    full_years_shape = (full_years, 12, len(lons), len(lats),)
-
-    return full_years_shape, full_years_et, full_years_pet, full_years_r, full_years_pr, full_years_ro, full_years_pro,\
-           full_years_sp, full_years_tl, full_years_pl
-           
 #--------------------------------------------------------------------------------------
 @numba.jit
 def compute_scpdsi(Z, wet_slope, wet_intercept, dry_slope, dry_intercept):
@@ -1002,16 +933,8 @@ def scpdsi(precip_file,
     # get the CAFEC precipitation (P-hat), plus the PET, R, RO, and L values
     PHAT, petdat, rdat, rodat, tldat = get_cafec_precip(precip_dataset, pet_dataset, soil_dataset, times, lons, lats)
 
-    # moisture departure
-    precip = precip_dataset.variables['prcp'][:]
-
-    # reshape all the relevant data arrays into the same shape as the P-hat array (full years shape: [# years, 12, lon, lat])
-    full_years_shape = get_full_years_shape(times, lons, lats)
-#     petdat = np.reshape(petdat, full_years_shape)
-#     rdat = np.reshape(rdat, full_years_shape)
-#     rodat = np.reshape(rodat, full_years_shape)
-    precip = np.reshape(precip, full_years_shape)
-#     tldat = np.reshape(tldat, full_years_shape)
+    # reshape the precipitation array to match the P-hat array (i.e. "full years shape": [# years, 12, lon, lat])
+    precip = np.reshape(precip_dataset.variables['prcp'][:], PHAT.shape)
 
     # get the moisture departure, precipitation - P-hat
     DD = precip - PHAT
@@ -1027,10 +950,10 @@ def scpdsi(precip_file,
 
     # limit Z scores to +/- 16
     limit = np.nonzero(Z_1 > 16)
-    if len(limit):
+    if limit[0].size > 0:
         Z_1[limit] = 16.0
     limit = np.nonzero(Z_1 < -16)
-    if len(limit):
+    if limit[0].size > 0:
         Z_1[limit] = -16.0
 
     # reshape the Z-Index array into (months, lons, lats)
@@ -1047,7 +970,7 @@ def scpdsi(precip_file,
     # of the PDSI array and corresponding data arrays) and calculate the PDSI values
     for lon in range(PDSI.shape[0]):
         for lat in range(PDSI.shape[1]):
-            [PDSI[lon, lat, :], X1, X2, X3, Pe, montho] = compute_pdsi(Z_1[lon][lat])
+            PDSI[lon, lat, :] = compute_pdsi(Z_1[lon][lat])
 
     #TODO get these values from command line arguments
     calibration_start_year = input_start_year = 1895
