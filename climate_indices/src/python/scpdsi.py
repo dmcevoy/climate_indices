@@ -266,7 +266,6 @@ def computeK(K_prime,
     return K
 
 #--------------------------------------------------------------------------------------
-#@numba.jit
 def write_dataset(output_file,
                   template_dataset,
                   pdsi_data):
@@ -471,7 +470,6 @@ def perform_water_balance(PET, P, WCBOT, WCTOP, WCTOT, SS, SU, SP):
     return [PL, ET, TL, RO, R, SSS, SSU]
 
 #--------------------------------------------------------------------------------------
-#@numba.jit
 def load_data(input_dataset,
               variable_name,
               time_index):
@@ -512,7 +510,6 @@ def load_data(input_dataset,
     return data
 
 #--------------------------------------------------------------------------------------
-#@numba.jit
 def extract_coords(datasets):
 
     for dataset in datasets:
@@ -569,7 +566,6 @@ def extract_coords(datasets):
     return times, lons, lats
 
 #--------------------------------------------------------------------------------------
-#@numba.jit
 def get_cafec_precip(precip_dataset,
                      pet_dataset,
                      soil_dataset,
@@ -698,7 +694,7 @@ def get_cafec_precip(precip_dataset,
 #     pldat = np.reshape(full_years_pl, full_years_shape)
 #     spdat = np.reshape(full_years_sp, full_years_shape)
 
-    # get the indices where we have non-NaN
+    # get the mean for each month, ignoring NaN values
     etdat_mean = np.nanmean(etdat, axis=0)
     petdat_mean = np.nanmean(petdat, axis=0)
     rdat_mean = np.nanmean(rdat, axis=0)
@@ -708,23 +704,16 @@ def get_cafec_precip(precip_dataset,
     tldat_mean = np.nanmean(tldat, axis=0)
     pldat_mean = np.nanmean(pldat, axis=0)
 
-#    means_nums = [etdat_mean, rdat_mean, rodat_mean, tldat_mean]
-#    means_denoms = [petdat_mean, prdat_mean, prodat_mean, pldat_mean]
-#
-#    if all(x is not np.nan for x in means_nums) and \
-#       all(x is not np.nan for x in means_denoms) and \
-#       all(x != 0 for x in means_denoms):
-
+    # TODO get the correct sums arrays in order to utilize the water balance 
+    # coefficients function below (original Matlab contributed by WRCC/DRI, converted into Python)
+    alphas, betas, gammas, deltas = wb.get_coefficients_from_sums(PESUM, ETSUM, RSUM, PRSUM, SPSUM, ROSUM, PLSUM, TLSUM) #TODO test/debug/validate this function
+    
     # compute the water balance coefficients
     alphas = np.nanmean(etdat, axis=0) / np.nanmean(petdat, axis=0)
     betas = np.nanmean(rdat, axis=0) / np.nanmean(prdat, axis=0)
     gammas = np.nanmean(rodat, axis=0) / np.nanmean(prodat, axis=0)
     deltas = np.nanmean(tldat, axis=0) / np.nanmean(pldat, axis=0)
 
-    # TODO get the correct sums arrays in order to utilize the water balance 
-    # coefficients function below (original Matlab contributed by WRCC/DRI, converted into Python)
-    alphas, betas, gammas, deltas = get_coefficients_from_sums(PESUM, ETSUM, RSUM, PRSUM, SPSUM, ROSUM, PLSUM, TLSUM)
-    
     # we now have alphas as the array of monthly coefficient of evapotranspiration values (eq. 7 of Palmer 1965),
     # betas as the array of monthly coefficient of recharge (eq. 7 of Palmer 1965), gammas as the array of
     # monthly coefficient of runoff (eq. 8 of Palmer 1965), and deltas as the array of monthly coefficient
