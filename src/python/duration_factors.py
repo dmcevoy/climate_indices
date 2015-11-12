@@ -114,8 +114,7 @@ def compute_duration_factors(zindex_values,
                              calibration_start_year,
                              calibration_end_year,
                              input_start_year,
-                             periods_per_year=12,
-                             month_scale=1):
+                             periods_per_year=12):
 
     '''
     :param zindex_values: array with dimensions (lons, lats, times), times are months, in full year increments 
