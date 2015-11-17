@@ -1,7 +1,7 @@
-import logging
-import numpy as np
-import netCDF4
 from datetime import datetime
+import logging
+import netCDF4
+import numpy as np
 
 # set up a global logger
 logging.basicConfig(level=logging.DEBUG)
@@ -121,7 +121,9 @@ def extract_coords(datasets):
 #--------------------------------------------------------------------------------------
 def write_dataset(output_file,
                   template_dataset,
-                  pdsi_data):
+                  variable_data,
+                  variable_name,
+                  attributes):
 
     # get the coordinates from the template file
     times = template_dataset.variables['time'][:]
@@ -178,15 +180,18 @@ def write_dataset(output_file,
         logger.info('No units found for latitude coordinate variable in the template data set NetCDF')
 
     # create the variable
-    variable = dataset.createVariable('pdsi',
+    variable = dataset.createVariable(variable_name,
                                       'f4',
                                       ('time', 'lon', 'lat'),
                                       fill_value=np.NaN,
                                       zlib=True,
                                       least_significant_digit=3)
 
-    # load the data into the variable
-    variable[:] = pdsi_data
+    # add the attributes to the variable
+    variable.setncatts(attributes)
+    
+    # load the data values array into the variable
+    variable[:] = variable_data
 
     # close the output NetCDF file
     dataset.close()
