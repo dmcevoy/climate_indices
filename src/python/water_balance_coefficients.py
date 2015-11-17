@@ -1,18 +1,9 @@
-import numpy as np
 import logging
+import numpy as np
 
 # set up a global logger
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
-
-# 
-# #     # original code transposed the arrays before returning them, not sure if this is necessary with Python/numpy
-# #     alp = alp'
-# #     bet = bet'
-# #     gam = gam'
-# #     delta = delta'
-#     
-#     return alp, bet, gam, delta
 
 #--------------------------------------------------------------------------------------
 def get_coefficients_from_sums(PESUM, ETSUM, RSUM, PRSUM, SPSUM, ROSUM, PLSUM, TLSUM):
@@ -64,7 +55,7 @@ def divide_and_limit(numerators, denominators, zero_limits):
     index_values = np.array(range(len(denominators)), np.int)
     
     # perform an XOR on the array indices and the 'not zeros' array of indices 
-    # to get the indices where the value is zero
+    # to get the indices of the array where the value is zero
     zeros = np.setxor1d(index_values, not_zeros)
     if zeros.size > 0:
 
