@@ -1,18 +1,17 @@
 import logging
-import numpy as np
-import sys
-import netCDF4
-import numba
+#import numba
 from duration_factors import compute_duration_factors
-from datetime import datetime
+from netcdf import open_datasets, load_data, extract_coords, write_dataset, close_datasets
+import numpy as np
 import water_balance_coefficients as wb
+
 
 # set up a global logger
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 #--------------------------------------------------------------------------------------
-@numba.jit
+#@numba.jit(nopython=True)
 def gettingout(U, Ze, nmonths, nmonthc, dow):
 
     US1 = 0
@@ -40,7 +39,7 @@ def gettingout(U, Ze, nmonths, nmonthc, dow):
     return Pe
 
 #--------------------------------------------------------------------------------------
-#@numba.jit
+#@numba.jit(nopython=True)
 def compute_pdsi(Z):
 
     '''
@@ -221,13 +220,13 @@ def compute_pdsi(Z):
     return PDSI
 
 #--------------------------------------------------------------------------------------
-@numba.jit
-def computeKprime(DD, PE, R, RO, precip, L):
+#@numba.jit(nopython=True)
+def compute_K_prime(DD, PE, R, RO, precip, L):
 
     '''
     Computes the climatic characteristic based on equations (1) and (2) in Wells et al 2004.
 
-    :param DD: the moisture departure for a lon x lat grid
+    :param DD: the moisture departures for a lon x lat grid
     :param PE:
     :param R:
     :param RO:
@@ -247,15 +246,15 @@ def computeKprime(DD, PE, R, RO, precip, L):
     return K_prime, mean_DD
 
 #--------------------------------------------------------------------------------------
-@numba.jit
-def computeK(K_prime,
-             mean_DD):
+#@numba.jit
+def compute_K(K_prime,
+              mean_DD):
 
     '''
     Computes the climatic characteristic based on equation (2) in Wells et al 2004.
 
     :param K_prime: the first approximation of K for a lon x lat grid
-    :param mean_DD:
+    :param mean_DD: monthly mean moisture departures, of the same dimensions as K_prime
     :return: climatic characteristic K, of the same dimensions as K_prime
     '''
 
@@ -264,80 +263,7 @@ def computeK(K_prime,
     return K
 
 #--------------------------------------------------------------------------------------
-def write_dataset(output_file,
-                  template_dataset,
-                  pdsi_data):
-
-    # get the coordinates from the template file
-    times = template_dataset.variables['time'][:]
-    lons = template_dataset.variables['lon'][:]
-    lats = template_dataset.variables['lat'][:]
-
-    #TODO verify the shape of the PDSI data values array against the template dimensions
-
-    # open the output file for writing, set its dimensions and variables
-    dataset = netCDF4.Dataset(output_file, 'w')
-    dataset.createDimension('time', None)
-    dataset.createDimension('lon', len(lons))
-    dataset.createDimension('lat', len(lats))
-
-    # set some global group attributes
-    dataset.title = 'Self-calibrated Palmer Drought Severity Index (scPDSI)'
-    dataset.source = 'calculation using a new NCEI Python version of code originally developed in Matlab by J. Wolf, University of Idaho'
-    dataset.institution = 'National Centers for Environmental Information, NESDIS, NOAA, U.S. Department of Commerce'
-    dataset.standard_name_vocabulary = 'CF Standard Name Table (v26, 08 November 2013)'
-    dataset.date_created = str(datetime.now())
-    dataset.date_modified = str(datetime.now())
-    dataset.Conventions = 'CF-1.6'
-
-    # create a time coordinate variable with an increment per month of the period of record
-    time_variable = dataset.createVariable('time', 'i4', ('time',))
-    time_variable.long_name = 'time'
-    time_variable.standard_name = 'time'
-    time_variable.calendar = template_dataset.variables['time'].calendar
-    time_variable.units = template_dataset.variables['time'].units
-    time_variable[:] = times
-
-    # create the lon coordinate variable
-    lon_variable = dataset.createVariable('lon', 'f4', ('lon',))
-    lon_variable.long_name = 'longitude'
-    lon_variable.standard_name = 'longitude'
-    lon_variable[:] = lons
-    try:
-        units = template_dataset.variables['lon'].units
-        if units is not None:
-            lon_variable.units = units
-    except AttributeError:
-        logger.info('No units found for longitude coordinate variable in the template data set NetCDF')
-
-    # create the lat coordinate variable
-    lat_variable = dataset.createVariable('lat', 'f4', ('lat',))
-    lat_variable.long_name = 'latitude'
-    lat_variable.standard_name = 'latitude'
-    lat_variable[:] = lats
-    try:
-        units = template_dataset.variables['lat'].units
-        if units is not None:
-            lat_variable.units = units
-    except AttributeError:
-        logger.info('No units found for latitude coordinate variable in the template data set NetCDF')
-
-    # create the variable
-    variable = dataset.createVariable('pdsi',
-                                      'f4',
-                                      ('time', 'lon', 'lat'),
-                                      fill_value=np.NaN,
-                                      zlib=True,
-                                      least_significant_digit=3)
-
-    # load the data into the variable
-    variable[:] = pdsi_data
-
-    # close the output NetCDF file
-    dataset.close()
-
-#--------------------------------------------------------------------------------------
-@numba.jit
+#@numba.jit
 # previously named 'PDSI_wb_findnoloop
 def perform_water_balance(PET, P, WCBOT, WCTOP, WCTOT, SS, SU, SP):
 
@@ -468,102 +394,6 @@ def perform_water_balance(PET, P, WCBOT, WCTOP, WCTOT, SS, SU, SP):
     return [PL, ET, TL, RO, R, SSS, SSU]
 
 #--------------------------------------------------------------------------------------
-def load_data(input_dataset,
-              variable_name,
-              time_index):
-
-    # make sure the data set has the dimensions and variables we expect
-    if (not input_dataset.dimensions.has_key('lat')):
-        logger.critical("Input data set file is missing the 'lat' dimension")
-        return 1
-    if (not input_dataset.dimensions.has_key('lon')):
-        logger.critical("Input data set file is missing the 'lon' dimension")
-        return 1
-    if (not input_dataset.dimensions.has_key('time')):
-        logger.critical("Input data set file is missing the 'time' dimension")
-        return 1
-    if (not input_dataset.variables.has_key('lat')):
-        logger.critical("Input data set file is missing the 'lat' variable")
-        return 1
-    if (not input_dataset.variables.has_key('lon')):
-        logger.critical("Input data set file is missing the 'lon' variable")
-        return 1
-    if (not input_dataset.variables.has_key('time')):
-        logger.critical("Input data set file is missing the 'time' variable")
-        return 1
-    if (not input_dataset.variables.has_key(variable_name)):
-        logger.critical('Input data set file is missing the ' + variable_name + ' variable')
-        return 1
-
-    #TODO verify that the dimensions are in [time, lon, lat] order
-
-    try:
-        # pull the data from the variable
-        data = input_dataset.variables[variable_name][time_index:time_index + 1:1, :, :]
-    except Exception as ex:
-        message = 'Unable to read data for the variable named \'{var}\':  Cause: {cause}'.format(var=variable_name, cause=ex.__cause__)
-        logger.critical(message)
-        raise RuntimeError(message)
-
-    return data
-
-#--------------------------------------------------------------------------------------
-def extract_coords(datasets):
-
-    for dataset in datasets:
-
-        if (not dataset.dimensions.has_key('lat')):
-            message = "Input data set file is missing the 'lat' dimension"
-            logger.critical(message)
-            raise ValueError(message)
-            return 1
-        if (not dataset.dimensions.has_key('lon')):
-            message = "Input data set file is missing the 'lon' dimension"
-            logger.critical(message)
-            raise ValueError(message)
-        if (not dataset.dimensions.has_key('time')):
-            message = "Input data set file is missing the 'time' dimension"
-            logger.critical(message)
-            raise ValueError(message)
-        if (not dataset.variables.has_key('lat')):
-            message = "Input data set file is missing the 'lat' variable"
-            logger.critical(message)
-            raise ValueError(message)
-        if (not dataset.variables.has_key('lon')):
-            message = "Input data set file is missing the 'lon' variable"
-            logger.critical(message)
-            raise ValueError(message)
-        if (not dataset.variables.has_key('time')):
-            message = "Input data set file is missing the 'time' variable"
-            logger.critical(message)
-            raise ValueError(message)
-
-        #TODO make sure the data variable(s) have dimensions [time, lon, lat]
-
-        # on the first pass we get our "reference" set of lons, lats, and times, and all subsequent files should match
-        if 'lons' not in locals():
-            lons = dataset.variables['lon'][:]
-            lats = dataset.variables['lat'][:]
-            times = dataset.variables['time'][:]
-
-        else:
-            # get the lons and lats from the current file
-            comparison_lons = dataset.variables['lon'][:]
-            comparison_lats = dataset.variables['lat'][:]
-
-            # make sure that this file's lons and lats match up with the initial file
-            if not np.allclose(lons, comparison_lons, atol=0.00001):
-                message = 'Longitude values not matching between data sets'
-                logger.critical(message)
-                raise ValueError(message)
-            if not np.allclose(lats, comparison_lats, atol=0.00001):
-                message = 'Latitude values not matching between data sets'
-                logger.critical(message)
-                raise ValueError(message)
-
-    return times, lons, lats
-
-#--------------------------------------------------------------------------------------
 def get_cafec_precip(precip_dataset,
                      pet_dataset,
                      soil_dataset,
@@ -571,8 +401,13 @@ def get_cafec_precip(precip_dataset,
                      lons,
                      lats):
 
-    # load data from variable named 'awc' into soil array
-    soil = load_data(soil_dataset, 'awc', 0)
+    """
+
+    :rtype : object
+    """
+
+    # load data from variable named 'soil' into soil array
+    soil = load_data(soil_dataset, 'soil', 0)
     # make sure we're not dealing with all NaN or fill values
     soil[soil <= -999] = np.NaN  # turn all fill values (assumed to be anything less than -999) into NaNs
     if np.all(np.isnan(soil)):
@@ -583,7 +418,7 @@ def get_cafec_precip(precip_dataset,
     WCBOT = soil
 
     # water capacity upper level, assumed to be one inch (25.4 mm) at start
-    WCTOP = 25.4 * np.ones(len(soil))  # surface/top one inch (25.4 mm)
+    WCTOP = np.full((len(soil),), 25.4)  # surface/top one inch (25.4 mm)
 
     # total soil moisture water capacity
     WCTOT = WCBOT + WCTOP
@@ -610,8 +445,10 @@ def get_cafec_precip(precip_dataset,
     # go over each time step and perform an ongoing water balance accounting
     for time_index in range(len(times)):
 
-        # load data into precip array
-        precip = load_data(precip_dataset, 'prcp', time_index)
+        logger.info('Water balance accounting for time step {step}'.format(step=time_index))
+        
+        # load data for the current timestep into the precip array
+        precip = load_data(precip_dataset, 'ppt', time_index)
 
         # make sure we're not dealing with all NaN or fill values
         precip[precip <= -999] = np.NaN  # turn all fill values (assumed to be anything less than -999) into NaNs
@@ -621,7 +458,7 @@ def get_cafec_precip(precip_dataset,
         precip = np.ndarray.flatten(precip)
 
         # load data into pet array
-        pet = load_data(pet_dataset, 'pet', time_index)
+        pet = load_data(pet_dataset, 'PET', time_index)
         # make sure our data shape is the same as that of the precipitation array
         if data_shape != pet.shape:
             message = 'Incompatible data shapes -- precipitation: ' + str(data_shape) + '  PET: ' + str(pet.shape)
@@ -676,11 +513,15 @@ def get_cafec_precip(precip_dataset,
     # reshape the data arrays to the "full years" shape (with times separated into months and years dimensions)
     full_years_shape = get_full_years_shape(times, lons, lats)
     
+    logger.info('\nReshaping the data arrays into (year, month, lon, lat)\n')
+
     # reshape the data arrays into the "full years" shape
     arrays = [etdat, petdat, rdat, prdat, rodat, prodat, spdat, tldat, pldat]
-    for ary in arrays:
-        ary = np.reshape(ary, full_years_shape)
+    for i, ary in enumerate(arrays):
+        arrays[i] = np.reshape(ary, full_years_shape)
         
+    logger.info('\nGetting the mean of the water balance values\n')
+
     # get the mean for each month, ignoring NaN values
     et_mean = np.nanmean(etdat, axis=0)
     pet_mean = np.nanmean(petdat, axis=0)
@@ -690,6 +531,8 @@ def get_cafec_precip(precip_dataset,
     sp_mean = np.nanmean(spdat, axis=0)
     tl_mean = np.nanmean(tldat, axis=0)
     pl_mean = np.nanmean(pldat, axis=0)
+
+    logger.info('\nGetting water balance coefficients\n')
 
     # TODO get the correct sums arrays in order to utilize the water balance 
     # coefficients function below (original Matlab contributed by WRCC/DRI, converted into Python)
@@ -706,7 +549,7 @@ def get_cafec_precip(precip_dataset,
     return PHAT, petdat, rdat, rodat, tldat
 
 #--------------------------------------------------------------------------------------
-@numba.jit
+#@numba.jit
 def compute_scpdsi(Z, wet_slope, wet_intercept, dry_slope, dry_intercept):
 
     """
@@ -890,7 +733,7 @@ def compute_scpdsi(Z, wet_slope, wet_intercept, dry_slope, dry_intercept):
     return PDSI
 
 #--------------------------------------------------------------------------------------
-@numba.jit
+#@numba.jit
 def get_full_years_shape(times, lons, lats):
     '''
     This function makes a shape tuple for use when we need to reshape data arrays into (years, months, lons, lats),
@@ -912,15 +755,16 @@ def get_full_years_shape(times, lons, lats):
 def scpdsi(precip_file,
            pet_file,
            soil_file,
-           output_file):
+           output_file_base):
 
     # open the NetCDF files as dataset objects
-    precip_dataset = netCDF4.Dataset(precip_file)
-    pet_dataset = netCDF4.Dataset(pet_file)
-    soil_dataset = netCDF4.Dataset(soil_file)
+    datasets = open_datasets([precip_file, pet_file, soil_file])
+    precip_dataset = datasets[0]
+    pet_dataset = datasets[1]
+    soil_dataset = datasets[2]
 
     # get the coordinate values for the data set, all of which should match in size and order between the three files
-    times, lons, lats = extract_coords([precip_dataset, pet_dataset, soil_dataset])
+    times, lons, lats = extract_coords(datasets)
 
     # TODO how do we account for this spin up in the Python code?
     # i.e. what is being done here, is it adding ten years of mean values to the front of the data arrays?
@@ -929,6 +773,8 @@ def scpdsi(precip_file,
 #     PET(:,:,1:10) = repmat(nmean(PET,3), [1 1 10]);
 #     ppt(:,:,11:size(ppt,3)+10)=ppt;
 #     ppt(:,:,1:10) = repmat(nmean(ppt,3), [1 1 10]);
+
+    logger.info('Computing the CAFEC precipitation')
 
     # get the CAFEC precipitation (P-hat), plus the PET, R, RO, and L values
     PHAT, petdat, rdat, rodat, tldat = get_cafec_precip(precip_dataset, pet_dataset, soil_dataset, times, lons, lats)
@@ -939,11 +785,13 @@ def scpdsi(precip_file,
     # get the moisture departure, precipitation - P-hat
     DD = precip - PHAT
 
+    logger.info('Computing K\'')
+
     # compute the first approximation of the climatic characteristic, K'
-    K_prime, DD_mean = computeKprime(DD, petdat, rdat, rodat, precip, tldat)
+    K_prime, DD_mean = compute_K_prime(DD, petdat, rdat, rodat, precip, tldat)
 
     # compute the climatic characteristic, K
-    K = computeK(K_prime, DD_mean)
+    K = compute_K(K_prime, DD_mean)
 
     # Z-index, with shape (months, lons, lats)
     Z_1 = DD / (25.4 * K_prime)  # assume K' is in inches, multiply by 25.4 to get units into mm
@@ -960,6 +808,13 @@ def scpdsi(precip_file,
     timelonlat_shape = (len(times), len(lons), len(lats),)
     Z_1 = np.reshape(Z_1, timelonlat_shape)
 
+    # write the values to NetCDF file
+    variable_name = 'zindex'
+    attributes = {}
+    attributes['standard_name'] = variable_name
+    attributes['long_name'] = 'Palmer Z-index, computed as part of Self-calibrated PDSI'
+    write_dataset(output_file_base + '_' + variable_name + '.nc', precip_dataset, Z_1, variable_name, attributes)
+
     # reshape the Z-Index array into dimensions (lons, lats, months)
     Z_1 = np.rollaxis(Z_1, 0, 3)
 
@@ -970,6 +825,9 @@ def scpdsi(precip_file,
     # of the PDSI array and corresponding data arrays) and calculate the PDSI values
     for lon in range(PDSI.shape[0]):
         for lat in range(PDSI.shape[1]):
+
+            logger.info('Computing PDSI for lon/lat: {lon}/{lat}'.format(lon=lon, lat=lat))
+
             PDSI[lon, lat, :] = compute_pdsi(Z_1[lon][lat])
 
     #TODO get these values from command line arguments
@@ -978,8 +836,29 @@ def scpdsi(precip_file,
 
     # compute the slope and intercept values associated with the duration factors
     scalef = compute_duration_factors(Z_1, calibration_start_year, calibration_end_year, input_start_year, 12, 1)
-#     scalef = np.zeros((len(lons), len(lats), 2, 2))
 
+    # write the values to NetCDF file
+    variable_name = 'wet_slope'
+    attributes = {}
+    attributes['standard_name'] = variable_name
+    attributes['long_name'] = 'wet slope duration factor, computed as part of Self-calibrated PDSI'
+    write_dataset(output_file_base + '_' + variable_name + '.nc', precip_dataset, scalef[:, :, 0, 0], variable_name, attributes)
+    variable_name = 'wet_intercept'
+    attributes = {}
+    attributes['standard_name'] = variable_name
+    attributes['long_name'] = 'wet intercept duration factor, computed as part of Self-calibrated PDSI'
+    write_dataset(output_file_base + '_' + variable_name + '.nc', precip_dataset, scalef[:, :, 0, 1], variable_name, attributes)
+    variable_name = 'dry_slope'
+    attributes = {}
+    attributes['standard_name'] = variable_name
+    attributes['long_name'] = 'dry slope duration factor, computed as part of Self-calibrated PDSI'
+    write_dataset(output_file_base + '_' + variable_name + '.nc', precip_dataset, scalef[:, :, 1, 0], variable_name, attributes)
+    variable_name = 'dry_intercept'
+    attributes = {}
+    attributes['standard_name'] = variable_name
+    attributes['long_name'] = 'dry intercept duration factor, computed as part of Self-calibrated PDSI'
+    write_dataset(output_file_base + '_' + variable_name + '.nc', precip_dataset, scalef[:, :, 1, 1], variable_name, attributes)
+    
     # allocate an array to hold scPDSI values, with the same shape as the Z-index values array (lons, lats, months), initialized with NaNs
     SCPDSI = np.full(Z_1.shape, np.NAN)
 
@@ -987,6 +866,9 @@ def scpdsi(precip_file,
     # time series, as well as the corresponding wet and dry slope and intercepts (duration factors)
     for lon in range(Z_1.shape[0]):
         for lat in range(Z_1.shape[1]):
+
+            logger.info('Computing PDSI for lon/lat: {lon}/{lat}'.format(lon=lon, lat=lat))
+
             SCPDSI[lon, lat, :] = compute_scpdsi(Z_1[lon, lat, :],
                                                  scalef[lon, lat, 0, 0],
                                                  scalef[lon, lat, 0, 1],
@@ -997,12 +879,13 @@ def scpdsi(precip_file,
     pdsi_data = np.transpose(SCPDSI, (2, 0, 1))
 
     # write the values to NetCDF file
-    write_dataset(output_file, precip_dataset, pdsi_data)
+    variable_name = 'pdsi'
+    attributes['standard_name'] = 'SCPDSI'
+    attributes['long_name'] = 'Self-calibrated PDSI'
+    write_dataset(output_file_base + '_' + variable_name + '.nc', precip_dataset, pdsi_data, variable_name, attributes)
 
     # close the input NetCDF dataset objects
-    precip_dataset.close()
-    pet_dataset.close()
-    soil_dataset.close()
+    close_datasets(datasets)
 
 # -----------------------------------  original Matlab code below ----------------------------------
 # function SMB_PDSIupdate(oo);
@@ -1384,12 +1267,27 @@ def scpdsi(precip_file,
 
 if __name__ == '__main__':
 
-    # get command line arguments
-    precip_file = sys.argv[1]
-    pet_file = sys.argv[2]
-    soil_file = sys.argv[3]
-    output_file = sys.argv[4]
+    # # get command line arguments
+    # precip_file = sys.argv[1]
+    # pet_file = sys.argv[2]
+    # soil_file = sys.argv[3]
+    # output_file = sys.argv[4]
 
-    scpdsi(precip_file, pet_file, soil_file, output_file)
+#    # paths relevant to laptop PC
+#    data_dir = 'C:/Users/James/Dropbox/scpdsi/data/'   # home PC
+    data_dir = 'C:/home/scpdsi_wrcc/data/'   # work PC
+
+    # # paths relevant to EC2 instance
+    # data_dir = '/home/ubuntu/Dropbox/scpdsi/data/'
+
+    # paths relevant to climgrid-dev
+#     data_dir = '/home/james.adams/scpdsi_wrcc/data/'
+
+    precip_file = data_dir + 'ppt_wrcc_slice.nc'
+    pet_file = data_dir + 'PET_wrcc_slice.nc'
+    soil_file = data_dir + 'soil_wrcc_slice.nc'
+    output_file_base = data_dir + 'ncei_scpdsi_slice_1.nc'
+
+    scpdsi(precip_file, pet_file, soil_file, output_file_base)
 
     print 'Done'
