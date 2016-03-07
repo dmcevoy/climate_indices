@@ -53,8 +53,10 @@ def spei_gamma(precip_monthly_values,
     # compute the PET values using Thornthwaite's equation
     pet_monthly_values = thornthwaite(temp_monthly_values, latitude, data_start_year, NaN)
         
-    # get the difference of P - PE, assign the values into the temperature array (in order to reuse the memory)
+    # offset we add to the (P - PE values) in order to bring all values into the positive range     
     p_minus_pe_offset = 1000.0
+
+    # get the difference of P - PE, assign the values into the temperature array (in order to reuse the memory)
     p_minus_pe = (precip_monthly_values - pet_monthly_values) + p_minus_pe_offset
     
     # perform the SPEI computation (fit to the Pearson distribution) and assign the values into the dataset
@@ -78,8 +80,10 @@ def spei_pearson(precip_monthly_values,
     # compute the PET values using Thornthwaite's equation
     pet_monthly_values = thornthwaite(temp_monthly_values, latitude, data_start_year, NaN)
         
-    # get the difference of P - PE, assign the values into the temperature array (in order to reuse the memory)
+    # offset we add to the (P - PE values) in order to bring all values into the positive range     
     p_minus_pe_offset = 1000.0
+
+    # get the difference of P - PE, assign the values into the temperature array (in order to reuse the memory)
     p_minus_pe = (precip_monthly_values - pet_monthly_values) + p_minus_pe_offset
     
     # perform the SPEI computation (fit to the Pearson distribution) and assign the values into the dataset
