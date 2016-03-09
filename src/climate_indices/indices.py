@@ -11,7 +11,6 @@ logger = logging.getLogger(__name__)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
-@profile
 def spi_gamma(precip_monthly_values, 
               month_scale, 
               valid_min, 
@@ -23,7 +22,6 @@ def spi_gamma(precip_monthly_values,
                                             valid_max)
     
 #-----------------------------------------------------------------------------------------------------------------------
-@profile
 def spi_pearson(precip_monthly_values,
                 month_scale, 
                 valid_min, 
@@ -44,7 +42,6 @@ def spi_pearson(precip_monthly_values,
                                               calibration_end_year)
 
 #-----------------------------------------------------------------------------------------------------------------------
-@profile
 def spei_gamma(precip_monthly_values,
                temp_monthly_values,
                data_start_year,
@@ -69,7 +66,6 @@ def spei_gamma(precip_monthly_values,
                                             valid_max)
     
 #-----------------------------------------------------------------------------------------------------------------------
-@profile
 def spei_pearson(precip_monthly_values,
                  temp_monthly_values,
                  month_scale, 

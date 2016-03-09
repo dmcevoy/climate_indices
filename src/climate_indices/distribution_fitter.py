@@ -12,7 +12,8 @@ logging.basicConfig(level=logging.DEBUG,
 logger = logging.getLogger(__name__)
 
 #-----------------------------------------------------------------------------------------------------------------------
-@jit(float64[:,:](float64[:], int32))
+@profile
+#@jit(float64[:,:](float64[:], int32))
 def gamma_parameters(monthly_values,
                      scale_months):
     '''
@@ -66,7 +67,8 @@ def gamma_parameters(monthly_values,
     return gamma_parameters        
 
 #-----------------------------------------------------------------------------------------------------------------------
-@jit(float64[:](float64[:], int32, float64, float64))
+@profile
+#@jit(float64[:](float64[:], int32, float64, float64))
 def fit_to_gamma(values,
                  scale_months,
                  lower_limit,
@@ -107,7 +109,8 @@ def fit_to_gamma(values,
     return np.clip(values, lower_limit, upper_limit)
         
 #-----------------------------------------------------------------------------------------------------------------------
-@jit(float64(float64, float64, float64, float64))
+@profile
+#@jit(float64(float64, float64, float64, float64))
 def gamma_cdf(beta,
               gamma,
               pzero,
@@ -128,7 +131,8 @@ def gamma_cdf(beta,
         return (pzero + ((1.0 - pzero) * gammap(gamma, x / beta)))
 
 #-----------------------------------------------------------------------------------------------------------------------
-@jit(float64(float64, float64))
+@profile
+#@jit(float64(float64, float64))
 def gammap(gamma,
            x):
     '''
@@ -148,7 +152,8 @@ def gammap(gamma,
         return 1.0 - gammcf(gamma, x)
        
 #-----------------------------------------------------------------------------------------------------------------------
-@jit(float64(float64, float64))
+@profile
+#@jit(float64(float64, float64))
 def gammser(a, 
             x):
     '''
@@ -182,7 +187,8 @@ def gammser(a,
     return delta_sum * exp((-x + (a * log(x))) - gln)
 
 #-----------------------------------------------------------------------------------------------------------------------
-@jit(float64(float64, float64))
+@profile
+#@jit(float64(float64, float64))
 def gammcf(a,
            x):
     '''
@@ -246,7 +252,8 @@ def gammcf(a,
 #     return result
 
 #-----------------------------------------------------------------------------------------------------------------------
-@jit(float64(float64))
+@profile
+#@jit(float64(float64))
 def inv_normal(prob):
     '''
     See Abromowitz and Stegun _Handbook of Mathematical Functions_, p. 933
@@ -279,7 +286,8 @@ def inv_normal(prob):
         return (minus * (t - (((((c2 * t) + c1) * t) + c0) / ((((((d3 * t) + d2) * t) + d1) * t) + 1.0))))
 
 #----------------------------------------------------------------------------------------------------------------------
-@jit(float64[:](float64[:], int32, float64, float64, int32, int32, int32, int32))
+@profile
+#@jit(float64[:](float64[:], int32, float64, float64, int32, int32, int32, int32))
 def fit_to_pearson(data,                    
                    scale_months,
                    lower_limit,
@@ -359,7 +367,8 @@ def fit_to_pearson(data,
     return np.clip(fitted_values, lower_limit, upper_limit)
 
 #----------------------------------------------------------------------------------------------------------------------
-@jit(float64[:](float64[:], int32))
+@profile
+#@jit(float64[:](float64[:], int32))
 def get_sliding_sums(values,
                      number_of_values_to_sum):
     '''
@@ -379,7 +388,8 @@ def get_sliding_sums(values,
     return np.hstack(([np.nan]*(number_of_values_to_sum - 1), sliding_sums))
 
 #----------------------------------------------------------------------------------------------------------------------
-@jit(float64(float64, float64[:]))
+@profile
+#@jit(float64(float64, float64[:]))
 def pearson3cdf(value,
                 pearson_params):
     '''
@@ -427,7 +437,8 @@ def pearson3cdf(value,
     return result
 
 #----------------------------------------------------------------------------------------------------------------------
-@jit(float64(float64))
+@profile
+#@jit(float64(float64))
 def error_function(value):
     '''
     TODO
@@ -485,7 +496,8 @@ def error_function(value):
     return result
 
 #----------------------------------------------------------------------------------------------------------------------
-@jit(float64(float64))
+@profile
+#@jit(float64(float64))
 def quantile(probability_value):
     '''
     TODO
@@ -583,7 +595,8 @@ def quantile(probability_value):
     return result
     
 #----------------------------------------------------------------------------------------------------------------------
-@jit(float64[:](float64[:], int32, int32, int32, int32, int32))
+@profile
+#@jit(float64[:](float64[:], int32, int32, int32, int32, int32))
 def compute_pearson_params(values, 
                            month_scale,
                            data_start_year, 
@@ -672,7 +685,8 @@ def compute_pearson_params(values,
     return monthly_pearson_values;
 
 #-----------------------------------------------------------------------------------------------------------------------    
-@jit(float64[:](float64[:]))
+@profile
+#@jit(float64[:](float64[:]))
 def estimate_lmoments(values):
 
     '''
@@ -735,7 +749,8 @@ def estimate_lmoments(values):
     return lmoments
     
 #-----------------------------------------------------------------------------------------------------------------------
-@jit(float64[:](float64[:]))
+@profile
+#@jit(float64[:](float64[:]))
 def estimate_pearson_parameters(lmoments):
 
     '''
