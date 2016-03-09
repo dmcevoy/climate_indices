@@ -1,6 +1,6 @@
 from __future__ import division
 import logging
-from math import exp, log, pi, sqrt
+from math import exp, lgamma, log, pi, sqrt
 from numba import float64, int32, jit
 import numpy as np
 from scipy.special import gammainc
@@ -226,24 +226,24 @@ def gammcf(a,
     return g * exp((-x + (a * log(x))) - gln)
 
 #-----------------------------------------------------------------------------------------------------------------------
-@jit(float64(float64))
-def lgamma(x):
-    
-    '''
-    TODO
-    
-    :param x: 
-    :return:  
-    '''
-    
-    if x < 0.0:
-        result = lgamma(1.0)
-    else:
-        tmp = ((x - 0.5) * log(x + 4.5)) - (x + 4.5)
-        ser = (((((1.0 + (76.18009173 / (x + 0))) - (86.50532033 / (x + 1))) + (24.01409822 / (x + 2))) - (1.231739516 / (x + 3))) + (0.00120858003 / (x + 4))) - \
-                     (0.00000536382 / (x + 5))
-        result = tmp + log(ser * sqrt(2 * pi))
-    return result
+# @jit(float64(float64))
+# def lgamma(x):
+#     
+#     '''
+#     TODO
+#     
+#     :param x: 
+#     :return:  
+#     '''
+#     
+#     if x < 0.0:
+#         result = lgamma(1.0)
+#     else:
+#         tmp = ((x - 0.5) * log(x + 4.5)) - (x + 4.5)
+#         ser = (((((1.0 + (76.18009173 / (x + 0))) - (86.50532033 / (x + 1))) + (24.01409822 / (x + 2))) - (1.231739516 / (x + 3))) + (0.00120858003 / (x + 4))) - \
+#                      (0.00000536382 / (x + 5))
+#         result = tmp + log(ser * sqrt(2 * pi))
+#     return result
 
 #-----------------------------------------------------------------------------------------------------------------------
 @jit(float64(float64))
