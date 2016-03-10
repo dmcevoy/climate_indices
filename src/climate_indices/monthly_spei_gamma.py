@@ -195,6 +195,8 @@ if __name__ == '__main__':
                     
                     else:  # we have some valid values to work with
                         
+                        latitude = precip_dataset.variables[y_dim_name][y]
+
                         for month_scale_index, month_scale_var_name in enumerate(sorted(datasets.keys())):
 
                             # perform the SPI computation (fit to the Gamma distribution) and assign the values into the dataset
