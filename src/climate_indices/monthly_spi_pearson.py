@@ -117,11 +117,9 @@ if __name__ == '__main__':
         # get the command line arguments
         precip_file = sys.argv[1]
         precip_var_name = sys.argv[2]
-        temp_file = sys.argv[3]
-        temp_var_name = sys.argv[4]
-        output_file_base = sys.argv[5]
-        calibration_start_year = int(sys.argv[6])
-        calibration_end_year = int(sys.argv[7])
+        output_file_base = sys.argv[3]
+        calibration_start_year = int(sys.argv[4])
+        calibration_end_year = int(sys.argv[5])
 
         # the valid min and max values (the range within which the resulting SPI values will be clipped)
         valid_min = -3.09
