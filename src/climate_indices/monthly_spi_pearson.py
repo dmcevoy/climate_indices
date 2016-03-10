@@ -188,7 +188,7 @@ if __name__ == '__main__':
                             # perform the SPI computation (fit to the Gamma distribution) and assign the values into the dataset
                             datasets[month_scale_var_name].variables[month_scale_var_name][:, x, y] = \
                                 indices.spi_pearson(precip_data, 
-                                                    month_scale, 
+                                                    month_scales[month_scale_index], 
                                                     valid_min, 
                                                     valid_max, 
                                                     data_start_date.year, 
