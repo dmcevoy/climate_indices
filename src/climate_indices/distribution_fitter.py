@@ -145,46 +145,46 @@ def gammap(gamma,
 
     if x < (gamma + 1.0):
     
-        return gammser(gamma, x)
+        return gammainc(gamma, x)
     
     else:
     
         return 1.0 - gammcf(gamma, x)
        
 #-----------------------------------------------------------------------------------------------------------------------
-@profile
-#@jit(float64(float64, float64))
-def gammser(a, 
-            x):
-    '''
-    TODO
-    
-    :param a: 
-    :param x:
-    :return:  
-    '''
-
-    epsilon = 3.0e-7
-    gln = lgamma(a)
-
-    if x == 0.0:
-        return 0.0
-
-    ap = a
-    delta_sum = 1.0 / a
-    delta = delta_sum
-
-    for _ in range(100):
-
-        ap += 1
-        delta *= x / ap
-        delta_sum += delta
-        if abs(delta) < (epsilon * abs(delta_sum)):
-        
-            # TODO can we instead break the loop here and fall down to the final return statement, since it's equivalent?
-            return delta_sum * exp((-x + (a * log(x))) - gln)
-
-    return delta_sum * exp((-x + (a * log(x))) - gln)
+# @profile
+# #@jit(float64(float64, float64))
+# def gammser(a, 
+#             x):
+#     '''
+#     TODO
+#     
+#     :param a: 
+#     :param x:
+#     :return:  
+#     '''
+# 
+#     epsilon = 3.0e-7
+#     gln = lgamma(a)
+# 
+#     if x == 0.0:
+#         return 0.0
+# 
+#     ap = a
+#     delta_sum = 1.0 / a
+#     delta = delta_sum
+# 
+#     for _ in range(100):
+# 
+#         ap += 1
+#         delta *= x / ap
+#         delta_sum += delta
+#         if abs(delta) < (epsilon * abs(delta_sum)):
+#         
+#             # TODO can we instead break the loop here and fall down to the final return statement, since it's equivalent?
+#             return delta_sum * exp((-x + (a * log(x))) - gln)
+# 
+#     return delta_sum * exp((-x + (a * log(x))) - gln)
 
 #-----------------------------------------------------------------------------------------------------------------------
 @profile
