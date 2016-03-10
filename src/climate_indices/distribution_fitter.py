@@ -3,7 +3,7 @@ import logging
 from math import exp, lgamma, log, pi, sqrt
 from numba import float64, int32, jit
 import numpy as np
-from scipy.special import gammainc
+from scipy.special import gammainc, gammaincc
 
 # set up a basic, global logger
 logging.basicConfig(level=logging.DEBUG,
@@ -12,8 +12,8 @@ logging.basicConfig(level=logging.DEBUG,
 logger = logging.getLogger(__name__)
 
 #-----------------------------------------------------------------------------------------------------------------------
-@profile
-#@jit(float64[:,:](float64[:], int32))
+#@profile
+@jit(float64[:,:](float64[:], int32))
 def gamma_parameters(monthly_values,
                      scale_months):
     '''
@@ -67,8 +67,8 @@ def gamma_parameters(monthly_values,
     return gamma_parameters        
 
 #-----------------------------------------------------------------------------------------------------------------------
-@profile
-#@jit(float64[:](float64[:], int32, float64, float64))
+#@profile
+@jit(float64[:](float64[:], int32, float64, float64))
 def fit_to_gamma(values,
                  scale_months,
                  lower_limit,
@@ -109,8 +109,8 @@ def fit_to_gamma(values,
     return np.clip(values, lower_limit, upper_limit)
         
 #-----------------------------------------------------------------------------------------------------------------------
-@profile
-#@jit(float64(float64, float64, float64, float64))
+#@profile
+@jit(float64(float64, float64, float64, float64))
 def gamma_cdf(beta,
               gamma,
               pzero,
@@ -131,8 +131,8 @@ def gamma_cdf(beta,
         return (pzero + ((1.0 - pzero) * gammap(gamma, x / beta)))
 
 #-----------------------------------------------------------------------------------------------------------------------
-@profile
-#@jit(float64(float64, float64))
+#@profile
+@jit(float64(float64, float64))
 def gammap(gamma,
            x):
     '''
@@ -149,7 +149,7 @@ def gammap(gamma,
     
     else:
     
-        return 1.0 - gammcf(gamma, x)
+        return 1.0 - gammaincc(gamma, x)
        
 #-----------------------------------------------------------------------------------------------------------------------
 # @profile
@@ -187,49 +187,49 @@ def gammap(gamma,
 #     return delta_sum * exp((-x + (a * log(x))) - gln)
 
 #-----------------------------------------------------------------------------------------------------------------------
-@profile
-#@jit(float64(float64, float64))
-def gammcf(a,
-           x):
-    '''
-    TODO
-    
-    :param a: 
-    :param x:
-    :return:  
-    '''
-
-    g = 0.0
-    n = 0
-    epsilon = 3.0e-7
-    gln = lgamma(a)
-    gold = 0.0
-    a0 = 1.0
-    a1 = x
-    b0 = 0.0
-    b1 = 1.0
-    fac = 1.0
-    for n in range(1, 100):
-    
-        an = n
-        ana = an - a
-        a0 = (a1 + (a0 * ana)) * fac
-        b0 = (b1 + (b0 * ana)) * fac
-        anf = an * fac
-        a1 = (x * a0) + (anf * a1)
-        b1 = (x * b0) + (anf * b1)
-        if a1 != 0.0:
-        
-            fac = 1.0 / a1
-            g = b1 * fac
-            if abs((g - gold) / g) < epsilon:
-                
-                # TODO can we instead just break the loop here and fall down into the final return statement, which is equivalent?
-                return g * exp((-x + (a * log(x))) - gln)
-            
-            gold = g
-        
-    return g * exp((-x + (a * log(x))) - gln)
+# @profile
+# #@jit(float64(float64, float64))
+# def gammcf(a,
+#            x):
+#     '''
+#     TODO
+#     
+#     :param a: 
+#     :param x:
+#     :return:  
+#     '''
+# 
+#     g = 0.0
+#     n = 0
+#     epsilon = 3.0e-7
+#     gln = lgamma(a)
+#     gold = 0.0
+#     a0 = 1.0
+#     a1 = x
+#     b0 = 0.0
+#     b1 = 1.0
+#     fac = 1.0
+#     for n in range(1, 100):
+#     
+#         an = n
+#         ana = an - a
+#         a0 = (a1 + (a0 * ana)) * fac
+#         b0 = (b1 + (b0 * ana)) * fac
+#         anf = an * fac
+#         a1 = (x * a0) + (anf * a1)
+#         b1 = (x * b0) + (anf * b1)
+#         if a1 != 0.0:
+#         
+#             fac = 1.0 / a1
+#             g = b1 * fac
+#             if abs((g - gold) / g) < epsilon:
+#                 
+#                 # TODO can we instead just break the loop here and fall down into the final return statement, which is equivalent?
+#                 return g * exp((-x + (a * log(x))) - gln)
+#             
+#             gold = g
+#         
+#     return g * exp((-x + (a * log(x))) - gln)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # @jit(float64(float64))
@@ -252,8 +252,8 @@ def gammcf(a,
 #     return result
 
 #-----------------------------------------------------------------------------------------------------------------------
-@profile
-#@jit(float64(float64))
+#@profile
+@jit(float64(float64))
 def inv_normal(prob):
     '''
     See Abromowitz and Stegun _Handbook of Mathematical Functions_, p. 933
@@ -286,8 +286,8 @@ def inv_normal(prob):
         return (minus * (t - (((((c2 * t) + c1) * t) + c0) / ((((((d3 * t) + d2) * t) + d1) * t) + 1.0))))
 
 #----------------------------------------------------------------------------------------------------------------------
-@profile
-#@jit(float64[:](float64[:], int32, float64, float64, int32, int32, int32, int32))
+#@profile
+@jit(float64[:](float64[:], int32, float64, float64, int32, int32, int32, int32))
 def fit_to_pearson(data,                    
                    scale_months,
                    lower_limit,
@@ -367,8 +367,8 @@ def fit_to_pearson(data,
     return np.clip(fitted_values, lower_limit, upper_limit)
 
 #----------------------------------------------------------------------------------------------------------------------
-@profile
-#@jit(float64[:](float64[:], int32))
+#@profile
+@jit(float64[:](float64[:], int32))
 def get_sliding_sums(values,
                      number_of_values_to_sum):
     '''
@@ -388,8 +388,8 @@ def get_sliding_sums(values,
     return np.hstack(([np.nan]*(number_of_values_to_sum - 1), sliding_sums))
 
 #----------------------------------------------------------------------------------------------------------------------
-@profile
-#@jit(float64(float64, float64[:]))
+#@profile
+@jit(float64(float64, float64[:]))
 def pearson3cdf(value,
                 pearson_params):
     '''
@@ -437,8 +437,8 @@ def pearson3cdf(value,
     return result
 
 #----------------------------------------------------------------------------------------------------------------------
-@profile
-#@jit(float64(float64))
+#@profile
+@jit(float64(float64))
 def error_function(value):
     '''
     TODO
@@ -496,8 +496,8 @@ def error_function(value):
     return result
 
 #----------------------------------------------------------------------------------------------------------------------
-@profile
-#@jit(float64(float64))
+#@profile
+@jit(float64(float64))
 def quantile(probability_value):
     '''
     TODO
@@ -576,27 +576,23 @@ def quantile(probability_value):
     R = sqrt(log(R) * -1.0)
 
     if R > 5:
-    
         R = R - 5.0
         result = ((((((((((((((E7 * R) + E6) * R) + E5) * R) + E4) * R) + E3) * R) + E2) * R) + E1) * R) + E0) / \
                  ((((((((((((((F7 * R) + F6) * R) + F5) * R) + F4) * R) + F3) * R) + F2) * R) + F1) * R) + 1.0)
     
     else:
-    
         R = R - 1.6
         result = ((((((((((((((C7 * R) + C6) * R) + C5) * R) + C4) * R) + C3) * R) + C2) * R) + C1) * R) + C0) / \
                  ((((((((((((((D7 * R) + D6) * R) + D5) * R) + D4) * R) + D3) * R) + D2) * R) + D1) * R) + 1.0)
     
-
     if Q < 0:
-    
         result = -result
-    
+
     return result
     
 #----------------------------------------------------------------------------------------------------------------------
-@profile
-#@jit(float64[:](float64[:], int32, int32, int32, int32, int32))
+#@profile
+@jit(float64[:](float64[:], int32, int32, int32, int32, int32))
 def compute_pearson_params(values, 
                            month_scale,
                            data_start_year, 
@@ -685,8 +681,8 @@ def compute_pearson_params(values,
     return monthly_pearson_values;
 
 #-----------------------------------------------------------------------------------------------------------------------    
-@profile
-#@jit(float64[:](float64[:]))
+#@profile
+@jit(float64[:](float64[:]))
 def estimate_lmoments(values):
 
     '''
@@ -749,8 +745,8 @@ def estimate_lmoments(values):
     return lmoments
     
 #-----------------------------------------------------------------------------------------------------------------------
-@profile
-#@jit(float64[:](float64[:]))
+#@profile
+@jit(float64[:](float64[:]))
 def estimate_pearson_parameters(lmoments):
 
     '''
