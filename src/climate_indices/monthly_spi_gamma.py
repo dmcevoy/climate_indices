@@ -137,8 +137,7 @@ if __name__ == '__main__':
                                    'valid_max' : valid_max}              
 
             # initialize the output NetCDFs for each month scale
-            month_scales = [2, 3]
-#             month_scales = [1, 2, 3, 6, 9, 12, 24, 36, 48, 60, 72]
+            month_scales = [1, 2, 3, 6, 9, 12, 24, 36, 48, 60, 72]
             spi_gamma_datasets = {}
             for month_scale_index, month_scale_var_name in enumerate(month_scales):
 
