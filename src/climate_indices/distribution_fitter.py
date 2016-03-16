@@ -310,6 +310,12 @@ def fit_to_pearson(data,
     :return:  
     '''
 
+    # make sure data is in complete year multiples, otherwise pad the end of the monthly array with enough months to fill out the final year
+    original_length = data.size
+    remaining_months = 12 - (original_length % 12)
+    if remaining_months > 0:
+        data = np.append(data, np.full((remaining_months,), np.nan))
+        
     # calculate the "sliding sums" for the entire period of record
     summed_values = get_sliding_sums(data, scale_months)
 
@@ -320,7 +326,7 @@ def fit_to_pearson(data,
     # allocate the array of values we'll eventually return, all values initialized to the fill value
     fitted_values = np.full(data.shape, np.nan)
 
-    # now compute Pearson CDF -> probability values -> fitted values for the entire period of record
+    # compute Pearson CDF -> probability values -> fitted values for the entire period of record
     probability_of_zero = 0.0
     probability_value = 0.0
     pearson_values = np.zeros((4,))
@@ -364,7 +370,8 @@ def fit_to_pearson(data,
                 # the fitted value is the quantile of the probability value
                 fitted_values[i] = quantile(probability_value)
                 
-    return np.clip(fitted_values, lower_limit, upper_limit)
+    # clip off the remaining months as well as limit the upper and lower range of the results
+    return np.clip(fitted_values[:original_length], lower_limit, upper_limit)
 
 #----------------------------------------------------------------------------------------------------------------------
 #@profile
