@@ -1,6 +1,7 @@
 import distribution_fitter
 import logging
-from numpy import NaN
+from numba import float64, int32, jit
+import numpy as np
 from thornthwaite import thornthwaite
 
 # set up a basic, global logger
@@ -10,6 +11,22 @@ logging.basicConfig(level=logging.DEBUG,
 logger = logging.getLogger(__name__)
 
 
+#-----------------------------------------------------------------------------------------------------------------------
+@jit(float64[:](float64[:], int32))
+def percentage_of_average(precip_monthly_values, 
+                          month_scale):
+    
+    sums = distribution_fitter.get_sliding_sums(precip_monthly_values, month_scale)
+    monthly_means = np.full((12,), np.nan)
+    for i in range(12):
+        monthly_means[i] = np.nanmean(sums[i::12])
+    
+    percent_of_averages = np.full(sums.shape, np.nan)
+    for i in range(sums.size):
+        percent_of_averages[i] = sums[i] / monthly_means[i % 12]
+    
+    return percent_of_averages
+    
 #-----------------------------------------------------------------------------------------------------------------------
 def spi_gamma(precip_monthly_values, 
               month_scale, 
@@ -51,7 +68,7 @@ def spei_gamma(precip_monthly_values,
                valid_max):
 
     # compute the PET values using Thornthwaite's equation
-    pet_monthly_values = thornthwaite(temp_monthly_values, latitude, data_start_year, NaN)
+    pet_monthly_values = thornthwaite(temp_monthly_values, latitude, data_start_year, np.nan)
         
     # offset we add to the (P - PE values) in order to bring all values into the positive range     
     p_minus_pe_offset = 1000.0
@@ -78,7 +95,7 @@ def spei_pearson(precip_monthly_values,
                  calibration_end_year):
 
     # compute the PET values using Thornthwaite's equation
-    pet_monthly_values = thornthwaite(temp_monthly_values, latitude, data_start_year, NaN)
+    pet_monthly_values = thornthwaite(temp_monthly_values, latitude, data_start_year, np.nan)
         
     # offset we add to the (P - PE values) in order to bring all values into the positive range     
     p_minus_pe_offset = 1000.0
