@@ -240,7 +240,8 @@ def compute_K_prime(DD, PE, R, RO, precip, L):
     mean_RO = np.nanmean(RO, axis=0)
     mean_precip = np.nanmean(precip, axis=0)
     mean_L = np.nanmean(L, axis=0)
-    mean_DD = np.nanmean(DD, axis=0)
+#     mean_DD = np.nanmean(DD, axis=0)
+    mean_DD = np.nanmean(DD.flatten())
     term = (mean_PE + mean_R + mean_RO) / (mean_precip + mean_L) + 2.8
     K_prime = (1.5 * np.log10(term / mean_DD))  + 0.5
     return K_prime, mean_DD
@@ -781,6 +782,7 @@ def scpdsi(precip_file,
     PHAT, petdat, rdat, rodat, tldat = get_cafec_precip(precip_dataset, pet_dataset, soil_dataset, times, lons, lats)
 
     # reshape the precipitation array to match the P-hat array (i.e. "full years shape": [# years, 12, lon, lat])
+    # TODO now putting into shape (total_months, 1, 1)
     precip = np.reshape(precip_dataset.variables[precip_var_name][:], PHAT.shape)
 
     # get the moisture departure, precipitation - P-hat

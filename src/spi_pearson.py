@@ -12,29 +12,29 @@ logger = logging.getLogger(__name__)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
-def find_netcdf_datatype(object):
+def find_netcdf_datatype(data_object):
     
-    if isinstance(object, netCDF4.Variable):
+    if isinstance(data_object, netCDF4.Variable):
 
-        if object.dtype == 'float16':
+        if data_object.dtype == 'float16':
             netcdf_datatype = 'f2'
-        elif object.dtype == 'float32':
+        elif data_object.dtype == 'float32':
             netcdf_datatype = 'f4'
-        elif object.dtype == 'float64':
+        elif data_object.dtype == 'float64':
             netcdf_datatype = 'f8'
-        elif object.dtype == 'int16':
+        elif data_object.dtype == 'int16':
             netcdf_datatype = 'i2'
-        elif object.dtype == 'int32':
+        elif data_object.dtype == 'int32':
             netcdf_datatype = 'i4'
         else:
-            raise ValueError('Unsupported data type: {}'.format(object.dtype))
+            raise ValueError('Unsupported data type: {}'.format(data_object.dtype))
     
-    elif isinstance(object, float):
+    elif isinstance(data_object, float):
 
         netcdf_datatype = 'f4'
         
     else:
-        raise ValueError('Unsupported argument type: {}'.format(type(object)))
+        raise ValueError('Unsupported argument type: {}'.format(type(data_object)))
     
     return netcdf_datatype
     

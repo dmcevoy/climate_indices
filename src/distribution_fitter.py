@@ -2,6 +2,7 @@ from __future__ import division
 import logging
 from math import exp, lgamma, log, pi, sqrt
 from numba import float64, int32, jit
+import numexpr as ne
 import numpy as np
 from scipy.special import gammainc, gammaincc
 
@@ -282,6 +283,8 @@ def inv_normal(prob):
     elif prob == 0.0:
         return np.nan
     else:
+#         t = ne.evaluate('sqrt(log(1.0 / (prob * prob)))')
+#         return ne.evaluate('(minus * (t - (((((c2 * t) + c1) * t) + c0) / ((((((d3 * t) + d2) * t) + d1) * t) + 1.0))))')
         t = sqrt(log(1.0 / (prob * prob)))
         return (minus * (t - (((((c2 * t) + c1) * t) + c0) / ((((((d3 * t) + d2) * t) + d1) * t) + 1.0))))
 
@@ -417,14 +420,16 @@ def pearson3cdf(value,
     skew = pearson_params[2]
     if abs(skew) <= 1e-6:
     
+#         z = ne.evaluate('(value - pearson_params[0]) / pearson_params[1]')
         z = (value - pearson_params[0]) / pearson_params[1]
         return 0.5 + (0.5 * error_function(z * sqrt(0.5)))
     
     alpha = 4.0 / (skew * skew)
+#     x = ne.evaluate('((2.0 * (value - pearson_params[0])) / (pearson_params[1] * skew)) + alpha')
     x = ((2.0 * (value - pearson_params[0])) / (pearson_params[1] * skew)) + alpha
     if x > 0:
     
-        result = gammainc(alpha, x) # was GammaFunction.incompleteGammaP(alpha, x)
+        result = gammainc(alpha, x)
         if skew < 0.0:
         
             result = 1.0 - result
@@ -432,6 +437,7 @@ def pearson3cdf(value,
     else:
     
         # calculate the lowest possible value that will fit the distribution precip (i.e. Z = 0)
+#         minimumPossibleValue = ne.evaluate('pearson_params[0] - ((alpha * pearson_params[1] * skew) / 2.0)')
         minimumPossibleValue = pearson_params[0] - ((alpha * pearson_params[1] * skew) / 2.0)
         if value <= minimumPossibleValue:
         
@@ -465,13 +471,16 @@ def error_function(value):
             else:
                 result = 1.0
         else:
+#             exponential = ne.evaluate('exp(value * value * (-1))')
             exponential = exp(value * value * (-1))
             sqrtOfTwo = sqrt(2.0)
             zz = abs(value * sqrtOfTwo)
             if absValue > 5.0:
                 # alternative error function calculation for when the input value is in the critical range
-                result = exponential * (sqrtOfTwo / pi) / \
-                         (absValue + 1 / (zz + 2 / (zz + 3 / (zz + 4 / (zz + 0.65)))))
+                result = ne.evaluate('exponential * (sqrtOfTwo / pi) / \
+                                      (absValue + 1 / (zz + 2 / (zz + 3 / (zz + 4 / (zz + 0.65)))))')
+#                 result = exponential * (sqrtOfTwo / pi) / \
+#                                          (absValue + 1 / (zz + 2 / (zz + 3 / (zz + 4 / (zz + 0.65)))))
 
             else:
                 # coefficients of rational-function approximation
@@ -492,8 +501,10 @@ def error_function(value):
                 Q7 = 0.08838834764831844
 
                 # calculate the error function from the input value and constant values
-                result = exponential * ((((((P6 * zz + P5) * zz + P4) * zz + P3) * zz + P2) * zz + P1) * zz + P0) /  \
-                         (((((((Q7 * zz + Q6) * zz + Q5) * zz + Q4) * zz + Q3) * zz + Q2) * zz + Q1) * zz + Q0)
+                result = ne.evaluate('exponential * ((((((P6 * zz + P5) * zz + P4) * zz + P3) * zz + P2) * zz + P1) * zz + P0) /  \
+                         (((((((Q7 * zz + Q6) * zz + Q5) * zz + Q4) * zz + Q3) * zz + Q2) * zz + Q1) * zz + Q0)')
+#                 result = exponential * ((((((P6 * zz + P5) * zz + P4) * zz + P3) * zz + P2) * zz + P1) * zz + P0) /  \
+#                          (((((((Q7 * zz + Q6) * zz + Q5) * zz + Q4) * zz + Q3) * zz + Q2) * zz + Q1) * zz + Q0)
 
             if value > 0.0:
                 result = 1 - result
@@ -563,6 +574,8 @@ def quantile(probability_value):
     
         # the case where 0.075 <= probability_value <= 0.925
         R = 0.180625 - (Q * Q)
+#         return ne.evaluate('(Q * ((((((((((((((A7 * R) + A6) * R) + A5) * R) + A4) * R) + A3) * R) + A2) * R) + A1) * R) + A0)) / \
+#                ((((((((((((((B7 * R) + B6) * R) + B5) * R) + B4) * R) + B3) * R) + B2) * R) + B1) * R) + 1.0)')
         return (Q * ((((((((((((((A7 * R) + A6) * R) + A5) * R) + A4) * R) + A3) * R) + A2) * R) + A1) * R) + A0)) / \
                ((((((((((((((B7 * R) + B6) * R) + B5) * R) + B4) * R) + B3) * R) + B2) * R) + B1) * R) + 1.0)
     
@@ -584,11 +597,15 @@ def quantile(probability_value):
 
     if R > 5:
         R = R - 5.0
+#         result = ne.evaluate('((((((((((((((E7 * R) + E6) * R) + E5) * R) + E4) * R) + E3) * R) + E2) * R) + E1) * R) + E0) / \
+#                  ((((((((((((((F7 * R) + F6) * R) + F5) * R) + F4) * R) + F3) * R) + F2) * R) + F1) * R) + 1.0)')
         result = ((((((((((((((E7 * R) + E6) * R) + E5) * R) + E4) * R) + E3) * R) + E2) * R) + E1) * R) + E0) / \
                  ((((((((((((((F7 * R) + F6) * R) + F5) * R) + F4) * R) + F3) * R) + F2) * R) + F1) * R) + 1.0)
     
     else:
         R = R - 1.6
+#         result = ne.evaluate('((((((((((((((C7 * R) + C6) * R) + C5) * R) + C4) * R) + C3) * R) + C2) * R) + C1) * R) + C0) / \
+#                  ((((((((((((((D7 * R) + D6) * R) + D5) * R) + D4) * R) + D3) * R) + D2) * R) + D1) * R) + 1.0)')
         result = ((((((((((((((C7 * R) + C6) * R) + C5) * R) + C4) * R) + C3) * R) + C2) * R) + C1) * R) + C0) / \
                  ((((((((((((((D7 * R) + D6) * R) + D5) * R) + D4) * R) + D3) * R) + D2) * R) + D1) * R) + 1.0)
     
@@ -738,6 +755,7 @@ def estimate_lmoments(values):
         temp = p * sums[0]
         for i in range(1, k):
             ai = i
+#             p = ne.evaluate('-p * (ak + ai - 1.0) * (ak - ai) / (ai * ai)')
             p = -p * (ak + ai - 1.0) * (ak - ai) / (ai * ai)
             temp = temp + (p * sums[i])
         sums[k - 1] = temp
@@ -792,12 +810,15 @@ def estimate_pearson_parameters(lmoments):
     else:
         if (T3 < 0.333333333):
             T = pi * 3 * T3 * T3
-            alpha = (1.0 + (C1 * T)) / (T * (1.0 + (T * (C2 + (T * C3))))) 
+#             alpha = ne.evaluate('(1.0 + (C1 * T)) / (T * (1.0 + (T * (C2 + (T * C3)))))') 
+            alpha = (1.0 + (C1 * T)) / (T * (1.0 + (T * (C2 + (T * C3)))))
         else:
             T = 1.0 - T3
+#             alpha = ne.evaluate('T * (D1 + (T * (D2 + (T * D3)))) / (1.0 + (T * (D4 + (T * (D5 + (T * D6))))))')
             alpha = T * (D1 + (T * (D2 + (T * D3)))) / (1.0 + (T * (D4 + (T * (D5 + (T * D6))))))
             
         alpha_root = sqrt(alpha)
+#         beta = ne.evaluate('sqrt(pi) * lmoments[1] * exp(lgamma(alpha) - lgamma(alpha + 0.5))')
         beta = sqrt(pi) * lmoments[1] * exp(lgamma(alpha) - lgamma(alpha + 0.5))
         parameters[1] = beta * alpha_root
         if (lmoments[2] < 0):

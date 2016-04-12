@@ -29,8 +29,8 @@ Python distribution.
 
 Install Python dependencies:
 
-    virtualenv: pip install -r requirements.txt
-    Anaconda:   conda install 
+    virtualenv:  $ pip install -r requirements.txt
+    Anaconda:    $ conda create -n <environment_name> --file requirements.txt
 
 ### Run Tests
 
