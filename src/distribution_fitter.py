@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 #-----------------------------------------------------------------------------------------------------------------------
 #@profile
-@jit(float64[:,:](float64[:], int32))
+#@jit(float64[:,:](float64[:], int32))
 def gamma_parameters(monthly_values,
                      scale_months):
     '''
@@ -69,7 +69,7 @@ def gamma_parameters(monthly_values,
 
 #-----------------------------------------------------------------------------------------------------------------------
 #@profile
-@jit(float64[:](float64[:], int32, float64, float64))
+#@jit(float64[:](float64[:], int32, float64, float64))
 def fit_to_gamma(values,
                  scale_months,
                  lower_limit,
@@ -378,7 +378,7 @@ def fit_to_pearson(data,
 
 #----------------------------------------------------------------------------------------------------------------------
 #@profile
-@jit(float64[:](float64[:], int32))
+#@jit(float64[:](float64[:], int32))
 def get_sliding_sums(values,
                      number_of_values_to_sum):
     '''
