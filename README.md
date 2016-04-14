@@ -1,8 +1,8 @@
 **Master**
-[![Build Status](https://img.shields.io/travis/github.com/monocongo/climate_indices/master.svg)](https://travis-ci.org/github.com/monocongo/climate_indices)
-[![Test Coverage](https://img.shields.io/codecov/c/gitlab/github.com/monocongo/climate_indices/master.svg)](https://codecov.io/github.com/monocongo/climate_indices)
-[![Code Climate](https://img.shields.io/codeclimate/github.com/monocongo/climate_indices.svg)](https://codeclimate.com/github.com/monocongo/climate_indices)
-[![Dependencies](https://img.shields.io/gemnasium/github.com/monocongo/climate_indices.svg)](https://gemnasium.com/github.com/monocongo/climate_indices)
+[![Build Status](https://img.shields.io/travis/github.com/nidis/climate_indices/master.svg)](https://travis-ci.org/github.com/nidis/climate_indices)
+[![Test Coverage](https://img.shields.io/codecov/c/gitlab/github.com/nidis/climate_indices/master.svg)](https://codecov.io/github.com/nidis/climate_indices)
+[![Code Climate](https://img.shields.io/codeclimate/github.com/nidis/climate_indices.svg)](https://codeclimate.com/github.com/nidis/climate_indices)
+[![Dependencies](https://img.shields.io/gemnasium/github.com/nidis/climate_indices.svg)](https://gemnasium.com/github.com/nidis/climate_indices)
 
 ## Climate Indicators for everyone
 
@@ -10,16 +10,30 @@ This project includes code to compute climate indicators, and is an attempt to p
 
 Below are the currently provided climate indicators, which provide a geographical and temporal picture of the severity of precipitation and temperature anomalies:
 
-* **SPI**: indicator of the sigma from the scaled values' fitted to a distribution (either gamma or Pearson type III) for each time step, input is total precipitation
-* **SPEI**: indicator of the sigma from the scaled values' fitted to a distribution (either gamma or Pearson type III) for each time step, input is total precipitation and temperature, as an intermediate step PET values are computed from temperature and can be provided as secondary output
-* **PET**: potential evapotranspiration, computed using [Thornthwaite's equation](https://en.wikipedia.org/wiki/Potential_evaporation).
+* [SPI](https://www.ncdc.noaa.gov/oa/climate/research/prelim/drought/spi.html): indicator of the sigma from the scaled values' fitted to a distribution 
+(either gamma or Pearson type III) for each time step, input is total precipitation. This is a transformation of the probability of observing a given 
+amount of precipitation in xx months.  A zero index value reflects the median of the distribution of precipitation, a -3 indicates a very extreme dry 
+spell, and a +3 indicates a very extreme wet spell.  The more the index value departs from zero, the drier or wetter an event lasting xx months is when 
+compared to the long-term climatology of the location.  The index allows for comparison of precipitation observations at different locations with markedly 
+different climates; an index value at one location expresses the same relative departure from median conditions at one location as at another location.  
+It is calculated for different time scales since it is possible to experience dry conditions over one time scale while simultaneously experiencing wet 
+conditions over a different time scale. 
+* [SPEI](https://www.researchgate.net/publication/252361460_The_Standardized_Precipitation-Evapotranspiration_Index_SPEI_a_multiscalar_drought_index): 
+indicator of the sigma from the scaled values' fitted to a distribution (either gamma or Pearson type III) for each time step, input is total precipitation 
+and temperature, as an intermediate step PET values are computed from temperature and can be provided as secondary output. The SPEI is based on precipitation 
+and temperature data, and it has the advantage of combining multiscalar  character  with  the  capacity  to  include  the  effects  of  temperature  variability 
+on  drought  assessment. The procedure to calculate the index is detailed and involves a climatic water balance, the accumulation of deficit/surplus at 
+different time scales, and adjustment to a log-logistic probability distribution.Mathematically, the SPEI is similar to the standardized precipitation index 
+(SPI), but it includes the role of temperature. 
+* [PET](https://www.ncdc.noaa.gov/monitoring-references/dyk/potential-evapotranspiration): potential evapotranspiration, computed using [Thornthwaite's equation](https://en.wikipedia.org/wiki/Potential_evaporation). The water demand or maximum amount of water that would be evapotranspired if enough water were available 
+(from precipitation and soil moisture), computed based on temperature and latitude.
 
 We welcome you to use, make suggestions, and contribute to our code. 
 
 ## Get involved
-We’re happy for you to get involved! 
-- Read our [contributing guidelines](https://github.com/monocongo/climate_indices/CONTRIBUTING.md). 
-Then, [file an issue](https://github.com/monocongo/climate_indices/issues) or submit a pull request.
+We're happy for you to get involved! 
+- Read our [contributing guidelines](https://github.com/nidis/climate_indices/CONTRIBUTING.md). 
+Then, [file an issue](https://github.com/nidis/climate_indices/issues) or submit a pull request.
 - [Send us an email](mailto:james.adams@noaa.gov).
 
 ## Set up
