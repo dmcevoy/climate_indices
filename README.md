@@ -1,8 +1,8 @@
 **Master**
-[![Build Status](https://img.shields.io/travis/<account>/<project>/master.svg)](https://travis-ci.org/<account>/<project>)
-[![Test Coverage](https://img.shields.io/codecov/c/gitlab/<account>/<project>/master.svg)](https://codecov.io/gitlab/<account>/<project>)
-[![Code Climate](https://img.shields.io/codeclimate/gitlab/<account>/<project>.svg)](https://codeclimate.com/gitlab/<account>/<project>)
-[![Dependencies](https://img.shields.io/gemnasium/<account>/<project>.svg)](https://gemnasium.com/<account>/<project>)
+[![Build Status](https://img.shields.io/travis/github.com/monocongo/climate_indices/master.svg)](https://travis-ci.org/github.com/monocongo/climate_indices)
+[![Test Coverage](https://img.shields.io/codecov/c/gitlab/github.com/monocongo/climate_indices/master.svg)](https://codecov.io/github.com/monocongo/climate_indices)
+[![Code Climate](https://img.shields.io/codeclimate/github.com/monocongo/climate_indices.svg)](https://codeclimate.com/github.com/monocongo/climate_indices)
+[![Dependencies](https://img.shields.io/gemnasium/github.com/monocongo/climate_indices.svg)](https://gemnasium.com/github.com/monocongo/climate_indices)
 
 ## Climate Indicators for everyone
 
@@ -18,8 +18,8 @@ We welcome you to use, make suggestions, and contribute to our code.
 
 ## Get involved
 We’re happy for you to get involved! 
-- Read our [contributing guidelines](https://k3.cicsnc.org/jadams/climate-indices/CONTRIBUTING.md). 
-Then, [file an issue](https://k3.cicsnc.org/jadams/climate-indices/issues) or submit a pull request.
+- Read our [contributing guidelines](https://github.com/monocongo/climate_indices/CONTRIBUTING.md). 
+Then, [file an issue](https://github.com/monocongo/climate_indices/issues) or submit a pull request.
 - [Send us an email](mailto:james.adams@noaa.gov).
 
 ## Set up
