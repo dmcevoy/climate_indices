@@ -21,7 +21,7 @@ class ThornthwaiteTestCase(unittest.TestCase):
         # initialize our month scales and expected results for the various 
         # fitting tests we'll do for each distribution for each month scale
     
-        # expected results for PET
+        # expected results for PET at latitude 45.0
         cls.fixture_results_pet = np.array([0.0000, 0.0000, 9.4886, 40.8408, 74.3253, 101.7806, 129.5835, 121.5981, 76.9191, 39.4350,
                                             4.3550, 0.0000, 2.3510, 0.9678, 12.2548, 27.9763, 67.1060, 127.8626, 133.9830, 114.8730,
                                             75.5393, 42.5878, 4.3384, 2.7737, 0.0000, 0.0000, 0.0000, 35.3868, 90.4441, 107.0270,
@@ -169,8 +169,7 @@ class ThornthwaiteTestCase(unittest.TestCase):
                                             5.1117, 17.0458, 31.2130, 37.9929, 61.5964, 128.1003, 128.5694, 121.3308, 92.2905, 50.4537,
                                             6.5859, 0.0000, 0.0000, 11.7602, 25.0490])
         
-        # create input array
-        # from nclimgrid_tavg.nc at lon:300, lat:300
+        # create input array (from nclimgrid_tavg.nc at lon:300, lat:300)
         cls.fixture_data = np.array([-2.82, -1.22, 2.55, 8.45, 12.75, 16.61, 20.35, 20.71, 15.84, 9.68, 1.62, -3.59,
                                     0.94, 0.41, 3.18, 6.04, 11.63, 20.29, 20.99, 19.76, 15.65, 10.4, 1.62, 1.13,
                                     -1.52, -1.84, -0.39, 7.45, 15.15, 17.36, 20.48, 20.93, 16.63, 9.24, 3.86, -3.21,
@@ -294,7 +293,6 @@ class ThornthwaiteTestCase(unittest.TestCase):
                                     1.86, 5.27, 7.26, 7.93, 10.81, 20.33, 20.21, 20.67, 18.59, 12.02, 2.33, -1.46,
                                     -0.67, 3.68, 5.96])
 
-        '''FILL IN HERE WITH CORRESPONDING VALUES'''
         cls.latitude = 45.0
         cls.fill_value = np.NaN
         
