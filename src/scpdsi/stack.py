@@ -27,6 +27,7 @@ Complexity:
     * pop  -- O(1)
     * peek -- O(1)
 """
+from __future__ import division
 
 
 class _Node(object):

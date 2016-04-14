@@ -1,3 +1,4 @@
+from __future__ import division
 import logging
 #import numba
 from duration_factors import compute_duration_factors
@@ -244,7 +245,8 @@ def compute_K_prime(DD, PE, R, RO, precip, L):
     mean_DD = np.nanmean(DD.flatten())
     term = (mean_PE + mean_R + mean_RO) / (mean_precip + mean_L) + 2.8
     K_prime = (1.5 * np.log10(term / mean_DD))  + 0.5
-    return K_prime, mean_DD
+#     return K_prime, mean_DD
+    return K_prime
 
 #--------------------------------------------------------------------------------------
 #@numba.jit
@@ -791,10 +793,11 @@ def scpdsi(precip_file,
     logger.info('Computing K\'')
 
     # compute the first approximation of the climatic characteristic, K'
-    K_prime, DD_mean = compute_K_prime(DD, petdat, rdat, rodat, precip, tldat)
+#     K_prime, DD_mean = compute_K_prime(DD, petdat, rdat, rodat, precip, tldat)
+    K_prime = compute_K_prime(DD, petdat, rdat, rodat, precip, tldat)
 
-    # compute the climatic characteristic, K
-    K = compute_K(K_prime, DD_mean)
+#     # compute the climatic characteristic, K
+#     K = compute_K(K_prime, DD_mean)
 
     # Z-index, with shape (months, lons, lats)
     Z_1 = DD / (25.4 * K_prime)  # assume K' is in inches, multiply by 25.4 to get units into mm

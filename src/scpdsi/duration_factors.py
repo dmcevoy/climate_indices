@@ -1,3 +1,4 @@
+from __future__ import division
 from stack import Stack
 import math
 import numpy as np
