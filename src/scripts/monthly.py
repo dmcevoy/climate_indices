@@ -1,6 +1,8 @@
+from __future__ import division
 import indices
 import logging
 import netCDF4
+import netcdf_utils
 import numpy as np
 import sys
 
@@ -10,107 +12,23 @@ logging.basicConfig(level=logging.DEBUG,
                     datefmt='%Y-%m-%d  %H:%M:%S')
 logger = logging.getLogger(__name__)
 
-
-#-----------------------------------------------------------------------------------------------------------------------
-def find_netcdf_datatype(object):
-    
-    if isinstance(object, netCDF4.Variable):
-
-        if object.dtype == 'float16':
-            netcdf_datatype = 'f2'
-        elif object.dtype == 'float32':
-            netcdf_datatype = 'f4'
-        elif object.dtype == 'float64':
-            netcdf_datatype = 'f8'
-        elif object.dtype == 'int16':
-            netcdf_datatype = 'i2'
-        elif object.dtype == 'int32':
-            netcdf_datatype = 'i4'
-        else:
-            raise ValueError('Unsupported data type: {}'.format(object.dtype))
-    
-    elif isinstance(object, float):
-
-        netcdf_datatype = 'f4'
-        
-    else:
-        raise ValueError('Unsupported argument type: {}'.format(type(object)))
-    
-    return netcdf_datatype
-    
-#-----------------------------------------------------------------------------------------------------------------------
-def initialize_dataset(file_path,
-                       template_dataset,
-                       x_dim_name,
-                       y_dim_name,
-                       data_variable_name,
-                       data_variable_long_name,
-                       data_variable_attributes,
-                       data_fill_value):
-    
-    # make sure the data matches the dimensions
-    time_size = template_dataset.variables['time'].size
-    y_size = template_dataset.variables[y_dim_name].size
-    x_size = template_dataset.variables[x_dim_name].size
-    
-    # open the output file for writing, set its dimensions and variables
-    netcdf = netCDF4.Dataset(file_path, 'w')
-
-    # copy the global attributes from the template
-    netcdf.setncatts(template_dataset.__dict__)
-        
-    # create the time, x, and y dimensions
-    netcdf.createDimension('time', None)
-    netcdf.createDimension(x_dim_name, x_size)
-    netcdf.createDimension(y_dim_name, y_size)
-    
-    # get the appropriate data types to use for the variables based on the values arrays
-    time_dtype = find_netcdf_datatype(template_dataset.variables['time'])
-    x_dtype = find_netcdf_datatype(template_dataset.variables[x_dim_name])
-    y_dtype = find_netcdf_datatype(template_dataset.variables[y_dim_name])
-    data_dtype = find_netcdf_datatype(data_fill_value)
-    
-    # create the variables
-    time_variable = netcdf.createVariable('time', time_dtype, ('time',))
-    x_variable = netcdf.createVariable(x_dim_name, x_dtype, (x_dim_name,))
-    y_variable = netcdf.createVariable(y_dim_name, y_dtype, (y_dim_name,))
-    data_variable = netcdf.createVariable(data_variable_name, 
-                                          data_dtype, 
-                                          ('time', x_dim_name, y_dim_name,), 
-                                          fill_value=data_fill_value)
-    
-    # set the variables' attributes
-    time_variable.setncatts(template_dataset.variables['time'].__dict__)
-    x_variable.setncatts(template_dataset.variables[x_dim_name].__dict__)
-    y_variable.setncatts(template_dataset.variables[y_dim_name].__dict__)
-    data_variable.setncatts(data_variable_attributes)
-    data_variable.setncattr('long_name', data_variable_long_name),
-
-    
-    # set the coordinate variables' values
-    time_variable[:] = template_dataset.variables['time'][:]
-    x_variable[:] = template_dataset.variables[x_dim_name]
-    y_variable[:] = template_dataset.variables[y_dim_name]
-
-    return netcdf
-    
 #----------------------------------------------------------------------------------------------------------------------
 if __name__ == '__main__':
 
     '''
-    This program will compute SPI corresponding to a precipitation dataset at a specified month scale. Index values 
-    are fitted to the Pearson type III distribution.  
+    This program will compute climate indicator(s) corresponding to a precipitation and/or temperature dataset(s) at 
+    a specified month scale. Index values are fitted to the Pearson type III distribution.  
     
-    example invocation:
+    Example invocation:
     
-    python spei_pearson.py C:/tmp/nclimgrid/lowres/lowres_nclimgrid_189501_201412_prcp.nc \
-                           prcp \
-                           C:/tmp/nclimgrid/lowres/lowres_nclimgrid_189501_201412_tavg.nc \
-                           tavg \
-                           C:/tmp/nclimgrid/lowres/python_lowres_nclimgrid_189501_201412_ \ 
-                           3
-                           1895 
-                           2014
+    $ python spei_pearson.py C:/tmp/nclimgrid/lowres/lowres_nclimgrid_189501_201412_prcp.nc \
+                             prcp \
+                             C:/tmp/nclimgrid/lowres/lowres_nclimgrid_189501_201412_tavg.nc \
+                             tavg \
+                             C:/tmp/nclimgrid/lowres/python_lowres_nclimgrid_189501_201412_ \ 
+                             3
+                             1895 
+                             2014
                           
     @param precip_file: precipitation dataset file, in NetCDF format
     @param precip_var_name: name of the precipitation variable within the input NetCDF
@@ -171,44 +89,44 @@ if __name__ == '__main__':
                 # initialize the output NetCDFs with the same dimensionality, coordinates, etc. as the input precipitation NetCDF
                 variable_name_spi_pearson = 'spi_pearson_{}'.format(str(month_scale).zfill(2))
                 long_name = 'SPI (Pearson), {}-month scale'.format(str(month_scale))
-                spi_pearson_dataset = initialize_dataset(output_file_base + variable_name_spi_pearson + '.nc',
-                                                         precip_dataset,
-                                                         x_dim_name,
-                                                         y_dim_name,
-                                                         variable_name_spi_pearson,
-                                                         long_name,
-                                                         variable_attributes,
-                                                         np.nan)
+                spi_pearson_dataset = netcdf_utils.initialize_dataset(output_file_base + variable_name_spi_pearson + '.nc',
+                                                                      precip_dataset,
+                                                                      x_dim_name,
+                                                                      y_dim_name,
+                                                                      variable_name_spi_pearson,
+                                                                      long_name,
+                                                                      variable_attributes,
+                                                                      np.nan)
                 variable_name_spi_gamma = 'spi_gamma_{}'.format(str(month_scale).zfill(2))
                 long_name = 'SPI (Gamma), {}-month scale'.format(str(month_scale))
-                spi_gamma_dataset = initialize_dataset(output_file_base + variable_name_spi_gamma + '.nc',
-                                                       precip_dataset,
-                                                       x_dim_name,
-                                                       y_dim_name,
-                                                       variable_name_spi_gamma,
-                                                       long_name,
-                                                       variable_attributes,
-                                                       np.nan)
+                spi_gamma_dataset = netcdf_utils.initialize_dataset(output_file_base + variable_name_spi_gamma + '.nc',
+                                                                    precip_dataset,
+                                                                    x_dim_name,
+                                                                    y_dim_name,
+                                                                    variable_name_spi_gamma,
+                                                                    long_name,
+                                                                    variable_attributes,
+                                                                    np.nan)
                 variable_name_spei_pearson = 'spei_pearson_{}'.format(str(month_scale).zfill(2))
                 long_name = 'SPEI (Pearson), {}-month scale'.format(str(month_scale))
-                spei_pearson_dataset = initialize_dataset(output_file_base + variable_name_spei_pearson + '.nc',
-                                                          precip_dataset,
-                                                          x_dim_name,
-                                                          y_dim_name,
-                                                          variable_name_spei_pearson,
-                                                          long_name,
-                                                          variable_attributes_with_calibration,
-                                                          np.nan)
+                spei_pearson_dataset = netcdf_utils.initialize_dataset(output_file_base + variable_name_spei_pearson + '.nc',
+                                                                       precip_dataset,
+                                                                       x_dim_name,
+                                                                       y_dim_name,
+                                                                       variable_name_spei_pearson,
+                                                                       long_name,
+                                                                       variable_attributes_with_calibration,
+                                                                       np.nan)
                 variable_name_spei_gamma = 'spei_gamma_{}'.format(str(month_scale).zfill(2))
                 long_name = 'SPEI (Gamma), {}-month scale'.format(str(month_scale))
-                spei_gamma_dataset = initialize_dataset(output_file_base + variable_name_spei_gamma + '.nc',
-                                                        precip_dataset,
-                                                        x_dim_name,
-                                                        y_dim_name,
-                                                        variable_name_spei_gamma,
-                                                        long_name,
-                                                        variable_attributes_with_calibration,
-                                                        np.nan)
+                spei_gamma_dataset = netcdf_utils.initialize_dataset(output_file_base + variable_name_spei_gamma + '.nc',
+                                                                     precip_dataset,
+                                                                     x_dim_name,
+                                                                     y_dim_name,
+                                                                     variable_name_spei_gamma,
+                                                                     long_name,
+                                                                     variable_attributes_with_calibration,
+                                                                     np.nan)
             
                 # loop over the grid cells
                 for x in range(precip_dataset.variables[x_dim_name].size):
