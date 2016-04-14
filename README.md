@@ -28,10 +28,9 @@ different time scales, and adjustment to a log-logistic probability distribution
 * [PET](https://www.ncdc.noaa.gov/monitoring-references/dyk/potential-evapotranspiration): potential evapotranspiration, computed using [Thornthwaite's equation](https://en.wikipedia.org/wiki/Potential_evaporation). The water demand or maximum amount of water that would be evapotranspired if enough water were available 
 (from precipitation and soil moisture), computed based on temperature and latitude.
 
+## Get involved
 We welcome you to use, make suggestions, and contribute to our code. 
 
-## Get involved
-We're happy for you to get involved! 
 - Read our [contributing guidelines](https://github.com/nidis/climate_indices/CONTRIBUTING.md). 
 Then, [file an issue](https://github.com/nidis/climate_indices/issues) or submit a pull request.
 - [Send us an email](mailto:james.adams@noaa.gov).
@@ -62,11 +61,11 @@ The below should use the Python executable from the virtualenv or Anaconda insta
 
 ### Run indicator processor codes
 
-**Example**: Compute PET from temperature dataset in NetCDF file 'nclimgrid\_tavg.nc' with a temperature variable named 'tavg', output to NetCDF file named 'nclimgrid_pet.nc':
+**Example**: Compute PET from temperature dataset in NetCDF file 'nclimgrid\_tavg.nc' with a temperature variable named 'tavg', output to NetCDF file named 'nclimgrid\_pet.nc':
 
     $ python src/scripts/pet.py nclimgrid_tavg.nc tavg nclimgrid_pet.nc
 
-**Example**: Compute SPI with a gamma distribution from precipitation dataset in NetCDF file 'nclimgrid\_prcp.nc' with a precipitation variable named 'prcp' at 3-month scale, output to NetCDF file named 'nclimgrid_spi_gamma_03.nc':
+**Example**: Compute SPI with a gamma distribution from precipitation dataset in NetCDF file 'nclimgrid\_prcp.nc' with a precipitation variable named 'prcp' at 3-month scale, output to NetCDF file named 'nclimgrid\_spi\_gamma\_03.nc':
 
     $ python src/scripts/spi_gamma.py nclimgrid_prcp.nc prcp nclimgrid_ 3
 
