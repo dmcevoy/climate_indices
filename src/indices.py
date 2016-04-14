@@ -1,3 +1,4 @@
+from __future__ import division
 import distribution_fitter
 import logging
 from numba import float64, int32, jit
@@ -39,7 +40,7 @@ def spi_gamma(precip_monthly_values,
                                             valid_max)
     
 #-----------------------------------------------------------------------------------------------------------------------
-def spi(precip_monthly_values,
+def spi_pearson(precip_monthly_values,
                 month_scale, 
                 valid_min, 
                 valid_max,
@@ -83,7 +84,7 @@ def spei_gamma(precip_monthly_values,
                                             valid_max)
     
 #-----------------------------------------------------------------------------------------------------------------------
-def spei(precip_monthly_values,
+def spei_pearson(precip_monthly_values,
                  temp_monthly_values,
                  month_scale, 
                  latitude,
