@@ -14,10 +14,8 @@ Thornthwaite CW (1948) An approach toward a rational classification of climate. 
 from __future__ import division
 import calendar
 import math
-import netCDF4
 from numba import float64, int32, jit
 import numpy as np
-import scipy.constants
 from _check import (
     check_doy as _check_doy,
     check_latitude_rad as _check_latitude_rad,

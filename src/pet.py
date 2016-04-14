@@ -1,9 +1,9 @@
+from __future__ import division
 import logging
 import netCDF4
 import numpy as np
 import sys
 from thornthwaite import thornthwaite
-from distribution_fitter import fit_to_gamma
 
 # set up a basic, global logger
 logging.basicConfig(level=logging.DEBUG,
@@ -13,29 +13,29 @@ logger = logging.getLogger(__name__)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
-def find_netcdf_datatype(object):
+def find_netcdf_datatype(data_object):
     
-    if isinstance(object, netCDF4.Variable):
+    if isinstance(data_object, netCDF4.Variable):
 
-        if object.dtype == 'float16':
+        if data_object.dtype == 'float16':
             netcdf_datatype = 'f2'
-        elif object.dtype == 'float32':
+        elif data_object.dtype == 'float32':
             netcdf_datatype = 'f4'
-        elif object.dtype == 'float64':
+        elif data_object.dtype == 'float64':
             netcdf_datatype = 'f8'
-        elif object.dtype == 'int16':
+        elif data_object.dtype == 'int16':
             netcdf_datatype = 'i2'
-        elif object.dtype == 'int32':
+        elif data_object.dtype == 'int32':
             netcdf_datatype = 'i4'
         else:
-            raise ValueError('Unsupported data type: {}'.format(object.dtype))
+            raise ValueError('Unsupported data type: {}'.format(data_object.dtype))
     
-    elif isinstance(object, float):
+    elif isinstance(data_object, float):
 
         netcdf_datatype = 'f4'
         
     else:
-        raise ValueError('Unsupported argument type: {}'.format(type(object)))
+        raise ValueError('Unsupported argument type: {}'.format(type(data_object)))
     
     return netcdf_datatype
     
@@ -49,7 +49,6 @@ def initialize_dataset(file_path,
                        data_fill_value):
     
     # make sure the data matches the dimensions
-    time_size = template_dataset.variables['time'].size
     y_size = template_dataset.variables[y_dim_name].size
     x_size = template_dataset.variables[x_dim_name].size
     

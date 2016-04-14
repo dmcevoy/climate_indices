@@ -2,7 +2,7 @@ from __future__ import division
 import logging
 from math import exp, lgamma, log, pi, sqrt
 from numba import float64, int32, jit
-import numexpr as ne
+# import numexpr as ne
 import numpy as np
 from scipy.special import gammainc, gammaincc
 
@@ -477,10 +477,10 @@ def error_function(value):
             zz = abs(value * sqrtOfTwo)
             if absValue > 5.0:
                 # alternative error function calculation for when the input value is in the critical range
-                result = ne.evaluate('exponential * (sqrtOfTwo / pi) / \
-                                      (absValue + 1 / (zz + 2 / (zz + 3 / (zz + 4 / (zz + 0.65)))))')
-#                 result = exponential * (sqrtOfTwo / pi) / \
-#                                          (absValue + 1 / (zz + 2 / (zz + 3 / (zz + 4 / (zz + 0.65)))))
+#                 result = ne.evaluate('exponential * (sqrtOfTwo / pi) / \
+#                                       (absValue + 1 / (zz + 2 / (zz + 3 / (zz + 4 / (zz + 0.65)))))')
+                result = exponential * (sqrtOfTwo / pi) / \
+                                         (absValue + 1 / (zz + 2 / (zz + 3 / (zz + 4 / (zz + 0.65)))))
 
             else:
                 # coefficients of rational-function approximation
@@ -501,10 +501,10 @@ def error_function(value):
                 Q7 = 0.08838834764831844
 
                 # calculate the error function from the input value and constant values
-                result = ne.evaluate('exponential * ((((((P6 * zz + P5) * zz + P4) * zz + P3) * zz + P2) * zz + P1) * zz + P0) /  \
-                         (((((((Q7 * zz + Q6) * zz + Q5) * zz + Q4) * zz + Q3) * zz + Q2) * zz + Q1) * zz + Q0)')
-#                 result = exponential * ((((((P6 * zz + P5) * zz + P4) * zz + P3) * zz + P2) * zz + P1) * zz + P0) /  \
-#                          (((((((Q7 * zz + Q6) * zz + Q5) * zz + Q4) * zz + Q3) * zz + Q2) * zz + Q1) * zz + Q0)
+#                 result = ne.evaluate('exponential * ((((((P6 * zz + P5) * zz + P4) * zz + P3) * zz + P2) * zz + P1) * zz + P0) /  \
+#                          (((((((Q7 * zz + Q6) * zz + Q5) * zz + Q4) * zz + Q3) * zz + Q2) * zz + Q1) * zz + Q0)')
+                result = exponential * ((((((P6 * zz + P5) * zz + P4) * zz + P3) * zz + P2) * zz + P1) * zz + P0) /  \
+                         (((((((Q7 * zz + Q6) * zz + Q5) * zz + Q4) * zz + Q3) * zz + Q2) * zz + Q1) * zz + Q0)
 
             if value > 0.0:
                 result = 1 - result
