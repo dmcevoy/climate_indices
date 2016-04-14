@@ -6,10 +6,15 @@
 
 ## Climate Indicators for everyone
 
-This project includes code to compute climate indicators, and is an attempt to provide implementations which are useful 
-to a wide range of users. 
+This project includes code to compute climate indicators, and is an attempt to provide implementations which are useful to a wide range of users. 
 
-We welcome you to explore, make suggestions, and contribute to our code. 
+Below are the currently provided climate indicators, which provide a geographical and temporal picture of the severity of precipitation and temperature anomalies:
+
+* **SPI**: indicator of the sigma from the scaled values' fitted to a distribution (either gamma or Pearson type III) for each time step, input is total precipitation
+* **SPEI**: indicator of the sigma from the scaled values' fitted to a distribution (either gamma or Pearson type III) for each time step, input is total precipitation and temperature, as an intermediate step PET values are computed from temperature and can be provided as secondary output
+* **PET**: potential evapotranspiration, computed using [Thornthwaite's equation](https://en.wikipedia.org/wiki/Potential_evaporation).
+
+We welcome you to use, make suggestions, and contribute to our code. 
 
 ## Get involved
 We’re happy for you to get involved! 
@@ -34,9 +39,22 @@ Install Python dependencies:
 
 ### Run Tests
 
-#### Python Unit Tests
+#### Python unit tests
 
-    py.test
+The below should use the Python executable from the virtualenv or Anaconda installation configured above.
+
+    $ python src/test/distribution_fitter_test.py
+    $ python src/test/thornthwaite_test.py
+
+### Run indicator processor codes
+
+**Example**: Compute PET from temperature dataset in NetCDF file 'nclimgrid\_tavg.nc' with a temperature variable named 'tavg', output to NetCDF file named 'nclimgrid_pet.nc':
+
+    $ python src/scripts/pet.py nclimgrid_tavg.nc tavg nclimgrid_pet.nc
+
+**Example**: Compute SPI with a gamma distribution from precipitation dataset in NetCDF file 'nclimgrid\_prcp.nc' with a precipitation variable named 'prcp' at 3-month scale, output to NetCDF file named 'nclimgrid_spi_gamma_03.nc':
+
+    $ python src/scripts/spi_gamma.py nclimgrid_prcp.nc prcp nclimgrid_ 3
 
 ## Copyright and licensing
 This project is in the public domain within the United States, and we waive worldwide copyright and related rights 
