@@ -3421,7 +3421,16 @@ class DistributionFitterTestCase(unittest.TestCase):
                                                              int(month_scale), 
                                                              self.min_valid, 
                                                              self.max_valid)
-            self.assertTrue(np.allclose(fitted_values, self.fixture_results_gamma[i], atol=0.001, rtol=0.000, equal_nan=True))
+
+#             # show the mismatches
+#             matches = np.isclose(fitted_values, self.fixture_results_gamma[i], atol=0.001, rtol=0.000, equal_nan=True)
+#             for j, match in enumerate(matches):
+#                 if not match:
+#                     print('Mismatch at {} element'.format(j))
+#                     print('Fitted: {}   Expected: {}'.format(fitted_values[j], self.fixture_results_gamma[i][j]))
+
+            assert np.allclose(fitted_values, self.fixture_results_gamma[i], atol=0.001, rtol=0.000, equal_nan=True) == True, \
+                   'One or more of the computed results does not match the expected results'
 
     def test_fit_to_pearson(self):
      
@@ -3444,7 +3453,8 @@ class DistributionFitterTestCase(unittest.TestCase):
 #                     print('Mismatch at {} element'.format(j))
 #                     print('Fitted: {}   Expected: {}'.format(fitted_values[j], self.fixture_results_pearson[i][j]))
                     
-            self.assertTrue(np.allclose(fitted_values, self.fixture_results_pearson[i], atol=0.001, rtol=0.000, equal_nan=True))
+            assert np.allclose(fitted_values, self.fixture_results_pearson[i], atol=0.001, rtol=0.000, equal_nan=True) == True, \
+                   'One or more of the computed results does not match the expected results'
 
 #--------------------------------------------------------------------------------------------------
 if __name__ == '__main__':

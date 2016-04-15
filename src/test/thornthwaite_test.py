@@ -303,16 +303,6 @@ class ThornthwaiteTestCase(unittest.TestCase):
         assert np.allclose(pet, self.fixture_results_pet, atol=0.001, rtol=0.000, equal_nan=True) == True, \
                'One or more of the results did not match within the specified tolerance'
 
-#         values_string = '\nPET\n\n'
-#         for i, value in enumerate(pet):
-#             new_value_string = '{:.4f}'.format(value)
-#             if (i + 1) % 10 == 0:
-#                 new_value_string = new_value_string + ',\n'
-#             else:
-#                 new_value_string = new_value_string + ', '
-#             values_string = values_string + new_value_string
-#         print(values_string)
-    
-
+#-----------------------------------------------------------------------------------------------------------------------
 if __name__ == '__main__':
     unittest.main()
