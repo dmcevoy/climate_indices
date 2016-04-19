@@ -56,9 +56,9 @@ Install Python dependencies:
 
 The below should use the Python executable from the virtualenv or Anaconda installation configured above.
 
-    $ python src/test/distribution_fitter_test.py
-    $ python src/test/thornthwaite_test.py
-
+    $ cd src/test
+    $ py.test
+    
 ### Run indicator processor codes
 
 **Example**: Compute PET from temperature dataset in NetCDF file 'nclimgrid\_tavg.nc' with a temperature variable named 'tavg', output to NetCDF file named 'nclimgrid\_pet.nc':
