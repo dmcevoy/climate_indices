@@ -34,10 +34,17 @@ def spi_gamma(precip_monthly_values,
               valid_min, 
               valid_max):
 
-    return distribution_fitter.fit_to_gamma(precip_monthly_values, 
+    
+    if isinstance(precip_monthly_values, np.ma.MaskedArray) and precip_monthly_values.mask.all():
+        
+        return distribution_fitter.fit_to_gamma(precip_monthly_values, 
                                             month_scale, 
                                             valid_min, 
                                             valid_max)
+    else:
+        
+        # we have only NaNs in the input dataset, return a NaN array in response (don't attempt to compute)
+        return np.full(precip_monthly_values.shape(), np.NaN)
     
 #-----------------------------------------------------------------------------------------------------------------------
 def spi_pearson(precip_monthly_values,
