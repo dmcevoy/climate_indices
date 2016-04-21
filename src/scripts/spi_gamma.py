@@ -1,4 +1,5 @@
 from __future__ import division
+from datetime import datetime
 import indices
 import logging
 import netCDF4
@@ -33,6 +34,10 @@ if __name__ == '__main__':
     '''
 
     try:
+        
+        # log some timing info, used later for elapsed time 
+        start_datetime = datetime.now()
+        logger.info("Start time: {}".format(start_datetime, '%x'))
         
         # get the command line arguments
         precip_file = sys.argv[1]
@@ -73,9 +78,7 @@ if __name__ == '__main__':
             # loop over the grid cells
             for x in range(precip_dataset.variables[x_dim_name].size):
                 for y in range(precip_dataset.variables[y_dim_name].size):
-                    
-                    logger.info('Processing x/y {}/{}'.format(x, y))
-                    
+                                        
                     # slice out the period of record for the x/y point
                     precip_data = precip_dataset.variables[precip_var_name][:, x, y]
                                            
@@ -86,6 +89,8 @@ if __name__ == '__main__':
                     
                     else:  # we have some valid values to work with
                         
+                        logger.info('Processing x/y {}/{}'.format(x, y))
+
                         # perform the SPI computation (fit to the Gamma distribution) and assign the values into the dataset
                         data = indices.spi_gamma(precip_data, 
                                                  month_scale, 
@@ -97,6 +102,12 @@ if __name__ == '__main__':
 #                                                                                              valid_min, 
 #                                                                                              valid_max)
             
+        # report on the elapsed time
+        end_datetime = datetime.now()
+        logger.info("End time: {}".format(end_datetime, '%x'))
+        elapsed = end_datetime - start_datetime
+        logger.info("Elapsed time: {}".format(elapsed, '%x'))
+
     except Exception, e:
         logger.error('Failed to complete', exc_info=True)
         raise
