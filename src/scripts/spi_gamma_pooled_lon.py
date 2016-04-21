@@ -21,9 +21,6 @@ lock = threading.Lock()
 # create a queue to hold worker thread parameter items (assuming a single parameter is required)
 worker_queue = Queue()
 
-# replace with command line argument, etc.
-number_of_cpus = 4
-
 #-----------------------------------------------------------------------------------------------------------------------
 def compute_indicator_by_lons_pooled(input_dataset,
                                      output_dataset,
@@ -59,7 +56,7 @@ def compute_indicator_by_lons_pooled(input_dataset,
              
             else:  # we have some valid values to work with
         
-    #             logger.info('Processing x/y {}/{}'.format(dim1_index, dim2_index))
+                logger.info('Processing x/y {}/{}'.format(dim1_index, dim2_index))
         
                 # perform a fitting to gamma     
                 data[:, dim2_index] = distribution_fitter.fit_to_gamma(data[:, dim2_index],
@@ -110,6 +107,9 @@ if __name__ == '__main__':
         precip_var_name = sys.argv[2]
         output_file_base = sys.argv[3]
         month_scale = int(sys.argv[4])
+
+        # replace with command line argument, etc.
+        number_of_cpus = 4
 
         # the valid min and max values (the range within which the resulting SPI values will be clipped)
         valid_min = -3.09

@@ -16,8 +16,6 @@ logging.basicConfig(level=logging.DEBUG,
 logger = logging.getLogger(__name__)
 
 # lock for threading
-# read_lock = threading.Lock()
-# write_lock = threading.Lock()
 lock = threading.Lock()
 #-----------------------------------------------------------------------------------------------------------------------
 def compute_indicator(input_dataset,
@@ -61,55 +59,6 @@ def compute_indicator(input_dataset,
     
     # slice out the period of record for the x/y point
     output_dataset.variables[output_var_name][:, dim1_index, dim2_index] = data
-    
-    # release the lock since we'll not share anything else until doing the I/O to the output dataset                        
-    lock.release()
-    
-#-----------------------------------------------------------------------------------------------------------------------
-def compute_indicator_by_lons(input_dataset,
-                              output_dataset,
-                              input_var_name,
-                              output_var_name,
-                              month_scale,
-                              valid_min, 
-                              valid_max,
-                              dim1_index,   # typically lon, for example with gridded datasets
-                              dim2_index):  # typically lat, for example with gridded datasets
-    
-    # lock the thread when doing I/O
-    lock.acquire()
-    
-    # slice out the period of record for the x/y point
-    data = input_dataset.variables[input_var_name][:, dim1_index, :]
-    
-    # release the lock since we'll not share anything else until doing the I/O to the output dataset                        
-    lock.release()
-    
-    # keep the original data shape, we'll use this to reshape later
-    original_shape = input_dataset.variables[input_var_name].shape
-    
-    for dim2_index in range(input_dataset.variables[input_var_name].shape[2]):
-        
-        # only process non-empty grid cells, i.e. data array contains at least some non-NaN values
-        if isinstance(data[:, dim2_index], np.ma.MaskedArray) and data[:, dim2_index].mask.all():
-    
-            pass         
-         
-        else:  # we have some valid values to work with
-    
-#             logger.info('Processing x/y {}/{}'.format(dim1_index, dim2_index))
-    
-            # perform a fitting to gamma     
-            data[:, dim2_index] = distribution_fitter.fit_to_gamma(data[:, dim2_index],
-                                                                   month_scale, 
-                                                                   valid_min, 
-                                                                   valid_max)
-        
-    # reacquire the thread lock for doing NetCDF I/O
-    lock.acquire()
-    
-    # slice out the period of record for the x/y point
-    output_dataset.variables[output_var_name][:, dim1_index, :] = np.reshape(data, (original_shape[0], 1, original_shape[2]))
     
     # release the lock since we'll not share anything else until doing the I/O to the output dataset                        
     lock.release()
@@ -181,13 +130,12 @@ if __name__ == '__main__':
             
             # loop over the grid cells
             for x in range(precip_dataset.variables[x_dim_name].size):
-#                 for y in range(precip_dataset.variables[y_dim_name].size):
+                for y in range(precip_dataset.variables[y_dim_name].size):
                      
-#                     logger.info('Processing x/y {}/{}'.format(x, y))
+                    logger.info('Processing x/y {}/{}'.format(x, y))
                      
                     # run a thread to compute the SPI/gamma on this x/y location
-#                     thread = threading.Thread(target=compute_indicator,
-                    thread = threading.Thread(target=compute_indicator_by_lons,
+                    thread = threading.Thread(target=compute_indicator,
                                               args=(precip_dataset, 
                                                     output_dataset, 
                                                     precip_var_name,
@@ -196,17 +144,16 @@ if __name__ == '__main__':
                                                     valid_min, 
                                                     valid_max, 
                                                     x, 
-#                                                     y))
-                                                    None))
+                                                    y))
                     thread.start()
                     
                     # keep a list of the threads the main program will join to in order to wait on all of them to finish
                     threads_to_join.append(thread)
             
-#             logger.info('Joining to all threads')
+            # join all threads so we'll block until all are finished
             for thread in threads_to_join:
                 thread.join()
-                
+
         # report on the elapsed time
         end_datetime = datetime.now()
         logger.info("End time: {}".format(end_datetime, '%x'))
