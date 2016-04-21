@@ -153,106 +153,6 @@ def gammap(gamma,
         return 1.0 - gammaincc(gamma, x)
        
 #-----------------------------------------------------------------------------------------------------------------------
-# @profile
-# #@jit(float64(float64, float64))
-# def gammser(a, 
-#             x):
-#     '''
-#     TODO
-#     
-#     :param a: 
-#     :param x:
-#     :return:  
-#     '''
-# 
-#     epsilon = 3.0e-7
-#     gln = lgamma(a)
-# 
-#     if x == 0.0:
-#         return 0.0
-# 
-#     ap = a
-#     delta_sum = 1.0 / a
-#     delta = delta_sum
-# 
-#     for _ in range(100):
-# 
-#         ap += 1
-#         delta *= x / ap
-#         delta_sum += delta
-#         if abs(delta) < (epsilon * abs(delta_sum)):
-#         
-#             # TODO can we instead break the loop here and fall down to the final return statement, since it's equivalent?
-#             return delta_sum * exp((-x + (a * log(x))) - gln)
-# 
-#     return delta_sum * exp((-x + (a * log(x))) - gln)
-
-#-----------------------------------------------------------------------------------------------------------------------
-# @profile
-# #@jit(float64(float64, float64))
-# def gammcf(a,
-#            x):
-#     '''
-#     TODO
-#     
-#     :param a: 
-#     :param x:
-#     :return:  
-#     '''
-# 
-#     g = 0.0
-#     n = 0
-#     epsilon = 3.0e-7
-#     gln = lgamma(a)
-#     gold = 0.0
-#     a0 = 1.0
-#     a1 = x
-#     b0 = 0.0
-#     b1 = 1.0
-#     fac = 1.0
-#     for n in range(1, 100):
-#     
-#         an = n
-#         ana = an - a
-#         a0 = (a1 + (a0 * ana)) * fac
-#         b0 = (b1 + (b0 * ana)) * fac
-#         anf = an * fac
-#         a1 = (x * a0) + (anf * a1)
-#         b1 = (x * b0) + (anf * b1)
-#         if a1 != 0.0:
-#         
-#             fac = 1.0 / a1
-#             g = b1 * fac
-#             if abs((g - gold) / g) < epsilon:
-#                 
-#                 # TODO can we instead just break the loop here and fall down into the final return statement, which is equivalent?
-#                 return g * exp((-x + (a * log(x))) - gln)
-#             
-#             gold = g
-#         
-#     return g * exp((-x + (a * log(x))) - gln)
-
-#-----------------------------------------------------------------------------------------------------------------------
-# @jit(float64(float64))
-# def lgamma(x):
-#     
-#     '''
-#     TODO
-#     
-#     :param x: 
-#     :return:  
-#     '''
-#     
-#     if x < 0.0:
-#         result = lgamma(1.0)
-#     else:
-#         tmp = ((x - 0.5) * log(x + 4.5)) - (x + 4.5)
-#         ser = (((((1.0 + (76.18009173 / (x + 0))) - (86.50532033 / (x + 1))) + (24.01409822 / (x + 2))) - (1.231739516 / (x + 3))) + (0.00120858003 / (x + 4))) - \
-#                      (0.00000536382 / (x + 5))
-#         result = tmp + log(ser * sqrt(2 * pi))
-#     return result
-
-#-----------------------------------------------------------------------------------------------------------------------
 #@profile
 @jit(float64(float64))
 def inv_normal(prob):
@@ -378,7 +278,7 @@ def fit_to_pearson(data,
 
 #----------------------------------------------------------------------------------------------------------------------
 #@profile
-#@jit(float64[:](float64[:], int32))
+@jit(float64[:](float64[:], int32))
 def get_sliding_sums(values,
                      number_of_values_to_sum):
     '''
