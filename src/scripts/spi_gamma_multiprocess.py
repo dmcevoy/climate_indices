@@ -3,7 +3,6 @@ from datetime import datetime
 import indices
 import logging
 from multiprocessing import Process, Array
-#from multiprocessing import Pool#, JoinableQueue, Process
 import netCDF4
 import netcdf_utils
 import numpy as np
@@ -23,21 +22,18 @@ class Processor:
     queue = None
                  
     def __init__(self, 
-                 month_scale, 
-                 valid_min, 
-                 valid_max,
                  nb_workers=1):
               
         # create a number of worker processes
+        self.number_of_workers = nb_workers
+        
+        # create a joinable queue
         self.queue = JoinableQueue()
-        self.processes = [Process(target=self.compute_indicator_longitude) for _ in range(nb_workers)]
+        
+        # create the processes
+        self.processes = [Process(target=self.compute_indicator) for _ in range(self.number_of_workers)]
         for p in self.processes:
             p.start()
-         
-        # set some values that will be used across all processes
-        self.month_scale = month_scale 
-        self.valid_min = valid_min
-        self.valid_max = valid_max
                  
     def add_work_item(self, item):
          
@@ -58,9 +54,12 @@ class Processor:
             # process the arguments here
             data = arguments[0]
             index = arguments[1] 
-            
+            month_scale = arguments[2] 
+            valid_min = arguments[3] 
+            valid_max = arguments[4] 
+                 
             # only process non-empty grid cells, i.e. data array contains at least some non-NaN values
-            if isinstance(data[:, index], np.ma.MaskedArray) and data[:, index].mask.all():
+            if (isinstance(data[:, index], np.ma.MaskedArray) and data[:, index].mask.all()) or np.isnan(data[:, index]).all():
              
                 pass         
                   
@@ -68,21 +67,35 @@ class Processor:
              
                 logger.info('Processing latitude: {}'.format(index))
              
+                # DEBUG ONLY -- REMOVE
+                timeseries = data[:, index]
+
                 # perform a fitting to gamma     
-                data[:, index] = indices.spi_gamma(data[:, index],
-                                                   self.month_scale, 
-                                                   self.valid_min, 
-                                                   self.valid_max)
+                fitted_values = indices.spi_gamma(data[:, index],
+                                                   month_scale, 
+                                                   valid_min, 
+                                                   valid_max)
  
+                # update the shared array
+                data[:, index] = fitted_values
+                
+                # DEBUG ONLY -- REMOVE
+                debug_results = data[:, index]
+                x = 0
+            
             # indicate that the task has completed
             self.queue.task_done()
  
     def terminate(self):
  
-        """ wait until queue is empty and terminate processes """
-        self.queue.join()
+        # terminate all processes
         for p in self.processes:
             p.terminate()
+
+    def wait_on_all(self):
+ 
+        #wait until queue is empty
+        self.queue.join()
 
 #-----------------------------------------------------------------------------------------------------------------------
 if __name__ == '__main__':
@@ -133,13 +146,13 @@ if __name__ == '__main__':
             # use names for the horizontal and vertical dimensions, this allows for more than just lon/lat 3-D variables
             # TODO write a function that pulls these out from the template NetCDF, recognizing the three current
             # dimensionalities: lon/lat for grids, state/division for climate divisions, and station/None for stations 
-            x_dim_name = 'lon'
-            y_dim_name = 'lat'
+            lon_dim_name = 'lon'
+            lat_dim_name = 'lat'
              
             # make sure the data matches the dimensions
             time_size = input_dataset.variables['time'].size
-            y_size = input_dataset.variables[y_dim_name].size
-            x_size = input_dataset.variables[x_dim_name].size
+            lat_size = input_dataset.variables[lat_dim_name].size
+            lon_size = input_dataset.variables[lon_dim_name].size
      
             # create the variable name from the indicator, distribution, and month scale
             variable_name = variable_name + '_{}'.format(str(month_scale).zfill(2))
@@ -154,67 +167,75 @@ if __name__ == '__main__':
                  
             # create the time, x, and y dimensions
             output_dataset.createDimension('time', None)
-            output_dataset.createDimension(x_dim_name, x_size)
-            output_dataset.createDimension(y_dim_name, y_size)
+            output_dataset.createDimension(lon_dim_name, lon_size)
+            output_dataset.createDimension(lat_dim_name, lat_size)
              
             # get the appropriate data types to use for the variables based on the values arrays
             time_dtype = netcdf_utils.find_netcdf_datatype(input_dataset.variables['time'])
-            x_dtype = netcdf_utils.find_netcdf_datatype(input_dataset.variables[x_dim_name])
-            y_dtype = netcdf_utils.find_netcdf_datatype(input_dataset.variables[y_dim_name])
+            lon_dtype = netcdf_utils.find_netcdf_datatype(input_dataset.variables[lon_dim_name])
+            lat_dtype = netcdf_utils.find_netcdf_datatype(input_dataset.variables[lat_dim_name])
             data_dtype = netcdf_utils.find_netcdf_datatype(fill_value)
              
             # create the variables
             time_variable = output_dataset.createVariable('time', time_dtype, ('time',))
-            x_variable = output_dataset.createVariable(x_dim_name, x_dtype, (x_dim_name,))
-            y_variable = output_dataset.createVariable(y_dim_name, y_dtype, (y_dim_name,))
+            x_variable = output_dataset.createVariable(lon_dim_name, lon_dtype, (lon_dim_name,))
+            y_variable = output_dataset.createVariable(lat_dim_name, lat_dtype, (lat_dim_name,))
             data_variable = output_dataset.createVariable(variable_name, 
                                                           data_dtype, 
-                                                          ('time', x_dim_name, y_dim_name,), 
+                                                          ('time', lon_dim_name, lat_dim_name,), 
                                                           fill_value=fill_value)
              
             # set the variables' attributes
             time_variable.setncatts(input_dataset.variables['time'].__dict__)
-            x_variable.setncatts(input_dataset.variables[x_dim_name].__dict__)
-            y_variable.setncatts(input_dataset.variables[y_dim_name].__dict__)
+            x_variable.setncatts(input_dataset.variables[lon_dim_name].__dict__)
+            y_variable.setncatts(input_dataset.variables[lat_dim_name].__dict__)
             data_variable.setncatts(variable_attributes)
              
             # set the coordinate variables' values
             time_variable[:] = input_dataset.variables['time'][:]
-            x_variable[:] = input_dataset.variables[x_dim_name]
-            y_variable[:] = input_dataset.variables[y_dim_name]
+            x_variable[:] = input_dataset.variables[lon_dim_name]
+            y_variable[:] = input_dataset.variables[lat_dim_name]
           
-        # create a shared memory array we'll use for each longitude slice we'll read/write   
-        shared_array_base = Array(ctypes.c_double, )
-        shared_array = np.ctypeslib.as_array(shared_array_base.get_obj())
-        shared_array = shared_array.reshape(time_size * y_size)
-
-        # create a processor with a number of worker processes
-        number_of_workers = 1
-        processor = Processor(month_scale, valid_min, valid_max, number_of_workers)
-        
-        # for each longitude slice
-        for dim1_index in range(input_dataset.variables['prcp'].shape[1]):
-
-            # read the longitude slice into a data array     
-            longitude_slice = input_dataset.variables[input_var_name][:, dim1_index, :]
+            # create a processor with a number of worker processes
+            number_of_workers = 1
+            processor = Processor(number_of_workers)
             
-            # convert the array onto a shared memory array which can be accessed from within another process
-            shared_array_base = Array(ctypes.c_double, longitude_slice)
-            shared_array = np.ctypeslib.as_array(shared_array_base.get_obj())
-            shared_array = shared_array.reshape(time_size * y_size)
-            
-            # loop over each latitude point in the longitude slice
-            for dim2_index in range(input_dataset.variables['prcp'].shape[2]):
+            # for each longitude slice
+            for lon_index in range(lon_size):
+    
+                logger.info('\n\nProcessing longitude: {}\n'.format(lon_index))
+
+                # read the longitude slice into a data array     
+                longitude_slice = input_dataset.variables[input_var_name][:, lon_index, :]
                 
-                # have the processor process the shared array at this index
-                arguments = [shared_array, dim2_index]
-                processor.add_work_item(arguments)
+                # reshape into a 1-D array
+                original_shape = longitude_slice.shape
+                flat_longitude_slice = longitude_slice.flatten()
                 
-            # join to the processor and don't continue until all processes have completed
+                # convert the array onto a shared memory array which can be accessed from within another process
+                shared_array_base = Array(ctypes.c_double, flat_longitude_slice)
+                shared_array = np.ctypeslib.as_array(shared_array_base.get_obj())
+                shared_array = shared_array.reshape(original_shape)
+                
+                # loop over each latitude point in the longitude slice
+                for dim2_index in range(lat_size):
+                    
+                    # have the processor process the shared array at this index
+                    arguments = [shared_array, dim2_index, month_scale, valid_min, valid_max]
+                    processor.add_work_item(arguments)
+                    
+                # join to the processor and don't continue until all processes have completed
+                processor.wait_on_all()
+    
+                # DEBUG ONLY -- REMOVE
+                fitted_array = np.ctypeslib.as_array(shared_array_base.get_obj())
+                fitted_values_array = np.reshape(shared_array, (time_size, 1, lat_size))
+                                                 
+                # write the fitted longitude slice values into the output NetCDF
+                output_dataset.variables[variable_name][:, lon_index, :] = np.reshape(shared_array, (time_size, 1, lat_size))
+    
+            # all processes have completed
             processor.terminate()
-
-            # write the fitted longitude slice values into the output NetCDF
-            output_dataset.variables[variable_name][:, dim1_index, :] = np.reshape(shared_array, (time_size, 1, y_size))
 
         # report on the elapsed time
         end_datetime = datetime.now()
