@@ -2,7 +2,7 @@ from __future__ import division
 from datetime import datetime
 import indices
 import logging
-from multiprocessing import Process, Array
+from multiprocessing import Array, Process
 import netCDF4
 import netcdf_utils
 import numpy as np
@@ -22,16 +22,19 @@ class Processor:
     queue = None
                  
     def __init__(self, 
-                 nb_workers=1):
+                 shared_array,
+                 data_shape,
+                 number_of_workers=1):
               
-        # create a number of worker processes
-        self.number_of_workers = nb_workers
-        
         # create a joinable queue
         self.queue = JoinableQueue()
         
+        # keep reference to shared memory array
+        self.shared_array = shared_array
+        self.data_shape = data_shape
+        
         # create the processes
-        self.processes = [Process(target=self.compute_indicator) for _ in range(self.number_of_workers)]
+        self.processes = [Process(target=self.compute_indicator) for _ in range(number_of_workers)]
         for p in self.processes:
             p.start()
                  
@@ -52,14 +55,18 @@ class Processor:
                 break
   
             # process the arguments here
-            data = arguments[0]
-            index = arguments[1] 
-            month_scale = arguments[2] 
-            valid_min = arguments[3] 
-            valid_max = arguments[4] 
+            index = arguments[0] 
+            month_scale = arguments[1] 
+            valid_min = arguments[2] 
+            valid_max = arguments[3] 
                  
+            # turn the shared array into a numpy array     
+            data = np.ctypeslib.as_array(self.shared_array)
+            data = data.reshape(self.data_shape)
+                
             # only process non-empty grid cells, i.e. data array contains at least some non-NaN values
-            if (isinstance(data[:, index], np.ma.MaskedArray) and data[:, index].mask.all()) or np.isnan(data[:, index]).all():
+            if (isinstance(data[:, index], np.ma.MaskedArray) and data[:, index].mask.all()) \
+                or np.isnan(data[:, index]).all() or (data[:, index] < 0).all():
              
                 pass         
                   
@@ -67,22 +74,15 @@ class Processor:
              
                 logger.info('Processing latitude: {}'.format(index))
              
-                # DEBUG ONLY -- REMOVE
-                timeseries = data[:, index]
-
                 # perform a fitting to gamma     
                 fitted_values = indices.spi_gamma(data[:, index],
-                                                   month_scale, 
-                                                   valid_min, 
-                                                   valid_max)
+                                                  month_scale, 
+                                                  valid_min, 
+                                                  valid_max)
  
                 # update the shared array
                 data[:, index] = fitted_values
                 
-                # DEBUG ONLY -- REMOVE
-                debug_results = data[:, index]
-                x = 0
-            
             # indicate that the task has completed
             self.queue.task_done()
  
@@ -196,43 +196,46 @@ if __name__ == '__main__':
             x_variable[:] = input_dataset.variables[lon_dim_name]
             y_variable[:] = input_dataset.variables[lat_dim_name]
           
+            # convert the array onto a shared memory array which can be accessed from within another process
+            shared_array_base = Array(ctypes.c_double, time_size * lat_size, lock=False)
+                
             # create a processor with a number of worker processes
-            number_of_workers = 1
-            processor = Processor(number_of_workers)
-            
+            number_of_workers = 4
+            data_shape = (time_size, lat_size)
+            processor = Processor(shared_array_base, data_shape, number_of_workers)
+
             # for each longitude slice
             for lon_index in range(lon_size):
     
                 logger.info('\n\nProcessing longitude: {}\n'.format(lon_index))
 
-                # read the longitude slice into a data array     
-                longitude_slice = input_dataset.variables[input_var_name][:, lon_index, :]
+                # get the shared memory array and convert into a numpy array with proper dimensions
+                longitude_array = np.ctypeslib.as_array(shared_array_base)
+                longitude_array = np.reshape(longitude_array, data_shape)
+
+                # read the longitude slice into the shared memory array     
+                longitude_array[:] = input_dataset.variables[input_var_name][:, lon_index, :]
                 
-                # reshape into a 1-D array
-                original_shape = longitude_slice.shape
-                flat_longitude_slice = longitude_slice.flatten()
-                
-                # convert the array onto a shared memory array which can be accessed from within another process
-                shared_array_base = Array(ctypes.c_double, flat_longitude_slice)
-                shared_array = np.ctypeslib.as_array(shared_array_base.get_obj())
-                shared_array = shared_array.reshape(original_shape)
+                # a list of arguments we'll map to the processes of the pool
+                arguments_iterable = []
                 
                 # loop over each latitude point in the longitude slice
-                for dim2_index in range(lat_size):
+                for lat_index in range(lat_size):
                     
                     # have the processor process the shared array at this index
-                    arguments = [shared_array, dim2_index, month_scale, valid_min, valid_max]
+                    arguments = [lat_index, month_scale, valid_min, valid_max]
                     processor.add_work_item(arguments)
-                    
+                        
                 # join to the processor and don't continue until all processes have completed
                 processor.wait_on_all()
     
-                # DEBUG ONLY -- REMOVE
-                fitted_array = np.ctypeslib.as_array(shared_array_base.get_obj())
-                fitted_values_array = np.reshape(shared_array, (time_size, 1, lat_size))
+                # get the longitude slice of fitted values from the shared memory array and convert  
+                # into a numpy array with proper dimensions which we can then use to write to NetCDF
+                fitted_array = np.ctypeslib.as_array(shared_array_base)
+                fitted_array = np.reshape(fitted_array, (time_size, 1, lat_size))
                                                  
-                # write the fitted longitude slice values into the output NetCDF
-                output_dataset.variables[variable_name][:, lon_index, :] = np.reshape(shared_array, (time_size, 1, lat_size))
+                # write the longitude slice of computed values into the output NetCDF
+                output_dataset.variables[variable_name][:, lon_index, :] = fitted_array
     
             # all processes have completed
             processor.terminate()
