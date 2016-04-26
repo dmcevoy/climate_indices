@@ -196,13 +196,13 @@ if __name__ == '__main__':
             x_variable[:] = input_dataset.variables[lon_dim_name]
             y_variable[:] = input_dataset.variables[lat_dim_name]
           
-            # convert the array onto a shared memory array which can be accessed from within another process
-            shared_array_base = Array(ctypes.c_double, time_size * lat_size, lock=False)
+            # create a shared memory array which can be accessed from within another process
+            shared_array = Array(ctypes.c_double, time_size * lat_size, lock=False)
                 
             # create a processor with a number of worker processes
-            number_of_workers = 4
+            number_of_workers = 1
             data_shape = (time_size, lat_size)
-            processor = Processor(shared_array_base, data_shape, number_of_workers)
+            processor = Processor(shared_array, data_shape, number_of_workers)
 
             # for each longitude slice
             for lon_index in range(lon_size):
@@ -210,7 +210,7 @@ if __name__ == '__main__':
                 logger.info('\n\nProcessing longitude: {}\n'.format(lon_index))
 
                 # get the shared memory array and convert into a numpy array with proper dimensions
-                longitude_array = np.ctypeslib.as_array(shared_array_base)
+                longitude_array = np.ctypeslib.as_array(shared_array)
                 longitude_array = np.reshape(longitude_array, data_shape)
 
                 # read the longitude slice into the shared memory array     
@@ -231,7 +231,7 @@ if __name__ == '__main__':
     
                 # get the longitude slice of fitted values from the shared memory array and convert  
                 # into a numpy array with proper dimensions which we can then use to write to NetCDF
-                fitted_array = np.ctypeslib.as_array(shared_array_base)
+                fitted_array = np.ctypeslib.as_array(shared_array)
                 fitted_array = np.reshape(fitted_array, (time_size, 1, lat_size))
                                                  
                 # write the longitude slice of computed values into the output NetCDF
