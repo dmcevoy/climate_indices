@@ -8,7 +8,7 @@ import netcdf_utils
 import numpy as np
 import sys
 import ctypes
-import scripts_namespace
+# import scripts_namespace
 
 # set up a basic, global logger
 logging.basicConfig(level=logging.DEBUG,
@@ -21,10 +21,10 @@ logger = logging.getLogger(__name__)
 def compute_indicator(args):
          
     # extract the arguments
-    index, data_shape, month_scale, valid_min, valid_max = args
+    index = args[0]
     
     # turn the shared array into a numpy array
-    data = np.ctypeslib.as_array(scripts_namespace.shared_array)
+    data = np.ctypeslib.as_array(shared_array)
     data = data.reshape(data_shape)
                  
     # only process non-empty grid cells, i.e. data array contains at least some non-NaN values
@@ -39,18 +39,29 @@ def compute_indicator(args):
               
         # perform a fitting to gamma     
         fitted_values = indices.spi_gamma(data[:, index],
-                                                  month_scale, 
-                                                  valid_min, 
-                                                  valid_max)
+                                          month_scale, 
+                                          valid_min, 
+                                          valid_max)
   
         # update the shared array
         data[:, index] = fitted_values
 
 #-----------------------------------------------------------------------------------------------------------------------
-def init_process(array):
+def init_process(array, 
+                 worker_data_shape, 
+                 worker_month_scale, 
+                 worker_valid_min, 
+                 worker_valid_max):
   
-    scripts_namespace.shared_array = array
-  
+    # put the arguments to the global namespace  
+    global shared_array, data_shape, month_scale, valid_min, valid_max
+    shared_array = array
+    data_shape = worker_data_shape
+    month_scale = worker_month_scale
+    valid_min = worker_valid_min
+    valid_max = worker_valid_max
+        
+    
 #-----------------------------------------------------------------------------------------------------------------------
 if __name__ == '__main__':
 
@@ -155,12 +166,12 @@ if __name__ == '__main__':
             data_shape = (time_size, lat_size)
                 
             # create a processor with a number of worker processes
-            number_of_workers = cpu_count()
+            number_of_workers = 1 #cpu_count()
 
             # create a Pool, essentially forking with copies of the shared array going to each pooled/forked process
             pool = Pool(processes=number_of_workers, 
                         initializer=init_process, 
-                        initargs=(shared_array,))
+                        initargs=(shared_array, data_shape, month_scale, valid_min, valid_max))
             
             # for each longitude slice
             for lon_index in range(lon_size):
@@ -180,12 +191,13 @@ if __name__ == '__main__':
                 
                 # a list of arguments we'll map to the processes of the pool
                 arguments_iterable = []
-                
+
                 # loop over each latitude point in the longitude slice
                 for lat_index in range(lat_size):
                     
                     # have the processor process the shared array at this index
-                    arguments = [lat_index, data_shape, month_scale, valid_min, valid_max]
+                    arguments = [lat_index]
+#                     arguments = [lat_index, data_shape, month_scale, valid_min, valid_max]
                     arguments_iterable.append(arguments)
                         
                 # map the arguments iterable to the compute function, allow the processes to run asynchronously
