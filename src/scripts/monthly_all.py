@@ -283,7 +283,6 @@ if __name__ == '__main__':
           
             # create a shared memory array to contain the input/output data which can be accessed from within another process
             shared_array = Array(ctypes.c_double, len(main_indicators) * len(main_distributions) * len(month_scales) * time_size * lat_size, lock=False)
-#             data_shape = (time_size, lat_size)
             full_data_shape = (len(main_indicators), len(main_distributions), len(month_scales), time_size, lat_size)
                 
             # create a shared memory array for the latitudes which can be accessed from within another process
@@ -336,7 +335,11 @@ if __name__ == '__main__':
                 # into a numpy array with proper dimensions which we can then use to write to NetCDF
                 fitted_array = np.ctypeslib.as_array(shared_array)
                 fitted_array = np.reshape(fitted_array, full_data_shape)
-                     
+                
+                # the data shape we'll use when writing to NetCDF     
+                data_shape = (time_size, 1, lat_size)
+                
+                # loop over all indicators/distributions/month scales and write each iteration's data to the correct output
                 for i, indicator in enumerate(main_indicators):
                     for j, distribution in enumerate(main_distributions):
                         for k, month_scale in enumerate(month_scales):
@@ -347,7 +350,7 @@ if __name__ == '__main__':
                                 
                                 # copy the longitude slice values into the NetCDF
                                 dataset = output_datasets[variable_name]
-                                dataset[variable_name][:, lon_index, :] = fitted_array[i, j, k, :, :]
+                                dataset[variable_name][:, lon_index, :] = np.reshape(fitted_array[i, j, k, :, :], data_shape)
 
             # all processes have completed, close the pool
             pool.close()
