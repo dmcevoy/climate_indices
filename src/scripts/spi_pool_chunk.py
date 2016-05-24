@@ -235,6 +235,12 @@ if __name__ == '__main__':
 
                 logger.info('\n\nProcessing chunk starting at longitude: {}\n'.format(lon_index))
 
+                # initialize the output arrays with fill values
+                gamma_lonslice_array = np.ctypeslib.as_array(output_gamma_array)
+                gamma_lonslice_array[:] = fill_value
+                pearson_lonslice_array = np.ctypeslib.as_array(output_person_array)
+                pearson_lonslice_array[:] = fill_value
+
                 # get the shared memory array and convert into a numpy array with proper dimensions
                 longitude_array = np.ctypeslib.as_array(input_shared_array)
                 longitude_array = np.reshape(longitude_array, input_data_shape)
@@ -300,7 +306,7 @@ if __name__ == '__main__':
             pool.join()
 
         # close the open output datasets
-        for dataset in datasets:
+        for dataset in datasets.values():
             dataset.close()
             
         # report on the elapsed time
